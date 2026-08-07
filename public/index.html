@@ -8,7 +8,7 @@
     />
     <title>A message for Sita</title>
     <meta name="robots" content="noindex" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#000000" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,152 +19,94 @@
     <link rel="stylesheet" href="/record.css" />
   </head>
   <body class="record-body">
-    <!-- Swap these for photos of Sita. src is any file under /img/tiles/,
-         note is what shows when the tile is flipped over. -->
-    <script type="application/json" id="tileData">
-      [
-              {
-                      "src": "/img/tiles/karst.jpg",
-                      "note": "She would rather be outside."
-              },
-              {
-                      "src": "/img/tiles/rainbow.jpg",
-                      "note": "Always finds the good light."
-              },
-              {
-                      "src": "/img/tiles/ridge.jpg",
-                      "note": "Walks further than she means to."
-              },
-              {
-                      "src": "/img/tiles/road.jpg",
-                      "note": "Takes the long way home."
-              },
-              {
-                      "src": "/img/tiles/dale.jpg",
-                      "note": "Knows every good view."
-              },
-              {
-                      "src": "/img/tiles/valley.jpg",
-                      "note": "Never minds an early start."
-              },
-              {
-                      "src": "/img/tiles/river.jpg",
-                      "note": "Swims in water that is too cold."
-              },
-              {
-                      "src": "/img/tiles/vallon.jpg",
-                      "note": "Collects small beautiful things."
-              },
-              {
-                      "src": "/img/tiles/coast.jpg",
-                      "note": "Stays until the sun goes down."
-              },
-              {
-                      "src": "/img/tiles/karst.jpg",
-                      "note": "Reads the plaque at every museum."
-              },
-              {
-                      "src": "/img/tiles/rainbow.jpg",
-                      "note": "Remembers what you told her."
-              },
-              {
-                      "src": "/img/tiles/ridge.jpg",
-                      "note": "Makes anywhere feel like somewhere."
-              }
-      ]
-    </script>
+    <form class="filmstage" id="form" novalidate>
+      <!-- One continuous roll running off the top and bottom of the screen. The
+           frames either side of the live one are stills from other people's
+           submissions. -->
+      <div class="reel" id="reel">
+        <div class="reel-perf" id="reelPerf" aria-hidden="true"></div>
 
-    <form class="mosaic" id="form" novalidate>
-      <!-- Tiles are injected either side of the reel so it stays in the middle. -->
-      <section class="pane" id="pane" aria-label="Record your video">
-        <!-- One continuous roll: the frames above and below are stills from
-             other people's submissions. -->
-        <div class="reel" id="reel">
-          <div class="reel-perf" id="reelPerf" aria-hidden="true"></div>
+        <div class="reel-frames">
+          <div class="frame frame--still" data-still aria-hidden="true"></div>
+          <div class="frame frame--still" id="framePrev" aria-hidden="true"></div>
 
-          <div class="reel-frames">
-            <div class="frame frame--still" id="framePrev" aria-hidden="true"></div>
+          <div class="frame frame--live" id="stage">
+            <canvas id="film"></canvas>
+            <video id="preview" playsinline muted autoplay></video>
+            <video id="playback" playsinline loop></video>
 
-            <div class="frame frame--live" id="stage">
-              <canvas id="film"></canvas>
-              <video id="preview" playsinline muted autoplay></video>
-              <video id="playback" playsinline loop></video>
+            <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
 
-              <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
+            <div class="timer" id="timer"><i></i><span id="timerText">0:00</span></div>
 
-              <div class="timer" id="timer"><i></i><span id="timerText">0:00</span></div>
-
-              <button type="button" class="flip-cam" id="flip" aria-label="Switch camera">
-                &#8635;
-              </button>
-
-              <div class="filepick" id="filepick">
-                <input type="file" id="video" accept="video/*" />
-                <label for="video" id="filepickLabel" aria-label="Upload a video instead"
-                  >&#8593;</label
-                >
+            <div class="review" id="reviewActions">
+              <input
+                type="text"
+                id="name"
+                maxlength="60"
+                autocomplete="name"
+                placeholder="Your name"
+                required
+              />
+              <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
+              <div class="review-row">
+                <button type="button" class="pill" id="retake">Retake</button>
+                <button type="submit" class="pill pill--solid" id="submit">Send</button>
               </div>
-
-              <div class="stage-shutter" id="stageShutter">
-                <button
-                  type="button"
-                  class="shutter"
-                  id="shutter"
-                  data-state="idle"
-                  aria-label="Record a video"
-                >
-                  <span class="ring"></span>
-                  <span class="core"></span>
-                  <svg viewBox="0 0 100 100" aria-hidden="true">
-                    <circle id="countdown" cx="50" cy="50" r="48" />
-                  </svg>
-                </button>
-              </div>
-
-              <div class="review" id="reviewActions">
-                <input
-                  type="text"
-                  id="name"
-                  maxlength="60"
-                  autocomplete="name"
-                  placeholder="Your name"
-                  required
-                />
-                <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
-                <div class="review-row">
-                  <button type="button" class="pill" id="retake">Retake</button>
-                  <button type="submit" class="pill pill--solid" id="submit">Send</button>
-                </div>
-                <div class="progress" id="progress">
-                  <div class="track"><div class="bar" id="progressBar"></div></div>
-                  <div class="label" id="progressLabel"></div>
-                </div>
-              </div>
-
-              <div
-                class="scrub"
-                id="scrub"
-                role="slider"
-                aria-label="Playback position"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="0"
-                tabindex="-1"
-              >
-                <div class="scrub-fill" id="scrubFill"></div>
+              <div class="progress" id="progress">
+                <div class="track"><div class="bar" id="progressBar"></div></div>
+                <div class="label" id="progressLabel"></div>
               </div>
             </div>
 
-            <div class="frame frame--still" id="frameNext" aria-hidden="true"></div>
+            <div
+              class="scrub"
+              id="scrub"
+              role="slider"
+              aria-label="Playback position"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+              tabindex="-1"
+            >
+              <div class="scrub-fill" id="scrubFill"></div>
+            </div>
           </div>
+
+          <div class="frame frame--still" id="frameNext" aria-hidden="true"></div>
+          <div class="frame frame--still" data-still aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <!-- Controls sit off the film, to the right. -->
+      <div class="controls-col">
+        <button
+          type="button"
+          class="shutter"
+          id="shutter"
+          data-state="idle"
+          aria-label="Record a video"
+        >
+          <span class="ring"></span>
+          <span class="core"></span>
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle id="countdown" cx="50" cy="50" r="48" />
+          </svg>
+        </button>
+
+        <button type="button" class="ghost-btn" id="flip" aria-label="Switch camera">&#8635;</button>
+
+        <div class="filepick" id="filepick">
+          <input type="file" id="video" accept="video/*" />
+          <label for="video" id="filepickLabel" aria-label="Upload a video instead">&#8593;</label>
         </div>
 
         <p class="hint-line" id="hint"></p>
-        <div class="error" id="error" role="alert"></div>
-      </section>
+      </div>
+
+      <div class="error" id="error" role="alert"></div>
     </form>
 
-    <script src="/tiles.js" type="module"></script>
     <script src="/reel.js" type="module"></script>
     <script src="/upload.js" type="module"></script>
   </body>

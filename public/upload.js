@@ -9,7 +9,6 @@ const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
 const playback = $('playback')
-const stageShutter = $('stageShutter')
 const shutter = $('shutter')
 const countdown = $('countdown')
 const timer = $('timer')
@@ -96,6 +95,24 @@ const canRecord = () =>
 
 /* ------------------------------------------------------------------ camera */
 
+// Match the render target to the frame box, so the shader's cover-crop has the
+// right target aspect and nothing gets squashed.
+function frameSize() {
+  const box = stage.getBoundingClientRect()
+  const ar = box.width && box.height ? box.width / box.height : 1 / 1.15
+  const h = 620
+  return [Math.round(h * ar), h]
+}
+
+function makeProjector() {
+  try {
+    return new FilmProjector(film)
+  } catch {
+    idleText.textContent = 'This browser cannot run the film effect.'
+    return null
+  }
+}
+
 function stopStream() {
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
@@ -124,21 +141,9 @@ async function startCamera() {
       })
     }
 
-    const track = stream.getVideoTracks()[0]?.getSettings?.() ?? {}
-    const srcW = preview.videoWidth || track.width || 720
-    const srcH = preview.videoHeight || track.height || 540
-    // Render a 4:3 Super 8 frame, cropped from whatever the camera gives us.
-    const outH = Math.min(600, srcH)
-    const outW = Math.round(outH * (4 / 3))
-
-    if (!projector) {
-      try {
-        projector = new FilmProjector(film)
-      } catch {
-        projector = null
-        idleText.textContent = 'This browser cannot run the film effect.'
-      }
-    }
+    if (!projector) projector = makeProjector()
+    // The shader crops the camera to the frame shape rather than stretching it.
+    const [outW, outH] = frameSize()
     if (projector) projector.start(preview, outW, outH)
 
     // Mirroring is a CSS transform only, so captureStream still records the
@@ -238,6 +243,8 @@ function startRecording() {
   timer.classList.add('is-visible')
   flip.classList.remove('is-visible')
   filepick.hidden = true
+  // The flicker belongs to the idle leader; hold the shutter steady on a take.
+  if (projector) projector.flicker = false
   hint.textContent = 'recording'
   timerText.textContent = '0:00'
 
@@ -247,6 +254,7 @@ function startRecording() {
 
 function stopRecording() {
   clearInterval(tickHandle)
+  if (projector) projector.flicker = true
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   shutter.dataset.state = 'idle'
   shutter.setAttribute('aria-label', 'Record a video')
@@ -299,7 +307,7 @@ function enterReview(url) {
   projector?.stop()
   film.hidden = true
   stageIdle.style.display = 'none'
-  stageShutter.hidden = true
+  shutter.hidden = true
   flip.classList.remove('is-visible')
   filepick.hidden = true
   hint.textContent = ''
@@ -338,7 +346,7 @@ function resetToCamera() {
   film.hidden = false
 
   review.classList.remove('is-visible')
-  stageShutter.hidden = false
+  shutter.hidden = false
   filepick.hidden = false
   fileInput.value = ''
 
@@ -516,6 +524,6 @@ window.addEventListener('pagehide', () => {
 })
 
 if (!canRecord()) {
-  stageShutter.hidden = true
+  shutter.hidden = true
   idleText.textContent = 'Recording is not supported here. Use the arrow to upload a video.'
 }

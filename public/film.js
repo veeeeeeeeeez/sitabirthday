@@ -33,13 +33,29 @@ varying vec2 vUv;
 uniform sampler2D uTex;
 uniform vec2 uTexel;
 
+// The camera hands us whatever shape it likes (often 16:9 or a portrait
+// sensor) while the film frame has its own aspect. Sampling the whole texture
+// into a differently shaped canvas stretches the picture - that is what
+// squashes a face. So crop to a centred sub-rect instead, exactly like
+// object-fit: cover.
+uniform vec2 uSrcSize;
+uniform vec2 uOutSize;
+
+vec2 coverUv(vec2 uv) {
+  float srcA = uSrcSize.x / max(uSrcSize.y, 1.0);
+  float outA = uOutSize.x / max(uOutSize.y, 1.0);
+  vec2 s = vec2(1.0);
+  if (srcA > outA) s.x = outA / srcA; else s.y = srcA / outA;
+  return (uv - 0.5) * s + 0.5;
+}
+
 void main() {
   vec3 sum = vec3(0.0);
   float weights[5];
   weights[0] = 0.227; weights[1] = 0.194; weights[2] = 0.121; weights[3] = 0.054; weights[4] = 0.016;
   for (int i = -4; i <= 4; i++) {
     float w = weights[int(abs(float(i)))];
-    vec3 c = texture2D(uTex, vUv + vec2(float(i) * uTexel.x * 2.0, 0.0)).rgb;
+    vec3 c = texture2D(uTex, coverUv(vUv + vec2(float(i) * uTexel.x * 2.0, 0.0))).rgb;
     float l = dot(c, vec3(0.299, 0.587, 0.114));
     // Only the top of the range blooms, easing in rather than clipping on.
     vec3 hi = c * smoothstep(0.62, 1.0, l);
@@ -78,6 +94,23 @@ uniform float uExposure;     // per-frame flicker
 uniform float uStartup;      // 1 -> 0 as the camera runs up to speed
 uniform float uGrain;
 uniform float uDust;
+uniform float uBlank;    // 1 = unexposed leader, no camera yet
+
+// The camera hands us whatever shape it likes (often 16:9 or a portrait
+// sensor) while the film frame has its own aspect. Sampling the whole texture
+// into a differently shaped canvas stretches the picture - that is what
+// squashes a face. So crop to a centred sub-rect instead, exactly like
+// object-fit: cover.
+uniform vec2 uSrcSize;
+uniform vec2 uOutSize;
+
+vec2 coverUv(vec2 uv) {
+  float srcA = uSrcSize.x / max(uSrcSize.y, 1.0);
+  float outA = uOutSize.x / max(uOutSize.y, 1.0);
+  vec2 s = vec2(1.0);
+  if (srcA > outA) s.x = outA / srcA; else s.y = srcA / outA;
+  return (uv - 0.5) * s + 0.5;
+}
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -103,12 +136,22 @@ void main() {
 
   uv = clamp(uv, 0.0015, 0.9985);
 
-  // --- lateral chromatic aberration, grows toward the corners ---
+  // --- the picture, or blank leader before the camera is running ---
+  vec2 suv = coverUv(uv);
   vec2 dir = c * 0.0038;
   vec3 col;
-  col.r = texture2D(uTex, uv + dir).r;
-  col.g = texture2D(uTex, uv).g;
-  col.b = texture2D(uTex, uv - dir).b;
+  if (uBlank > 0.5) {
+    // Unexposed stock idling in the gate: a dark grey base with the emulsion
+    // mottling through it. Everything below still applies, so it grains,
+    // flickers and vignettes like real leader.
+    float mottle = vnoise(vUv * 3.0 + uSeed * 0.7) * 0.045
+                 + vnoise(vUv * 11.0 + uSeed * 1.9) * 0.022;
+    col = vec3(0.105, 0.100, 0.093) + mottle;
+  } else {
+    col.r = texture2D(uTex, suv + dir).r;
+    col.g = texture2D(uTex, suv).g;
+    col.b = texture2D(uTex, suv - dir).b;
+  }
 
   // --- exposure: shutter flicker, plus the run-up when the motor starts ---
   col *= uExposure;
@@ -116,7 +159,7 @@ void main() {
 
   // --- halation ---
   vec3 bloom = texture2D(uBloom, uv).rgb;
-  col += bloom * vec3(0.62, 0.30, 0.16) * 1.5;
+  col += bloom * vec3(0.62, 0.30, 0.16) * 1.5 * (1.0 - uBlank);
 
   // --- Kodachrome-ish grade: warm highlights, green-teal lifted shadows ---
   float l = dot(col, vec3(0.299, 0.587, 0.114));
@@ -155,9 +198,23 @@ void main() {
     col += vec3(0.20, 0.19, 0.17);
   }
 
-  // --- vignette and the softness of the gate edge ---
+  // --- vignette ---
   float v = smoothstep(0.98, 0.30, length(c * vec2(1.04, 1.0)));
   col *= mix(0.66, 1.0, v);
+
+  // --- the gate edge ---
+  // The aperture is a cut piece of metal and the emulsion edge behind it is
+  // never straight, so the frame border wanders and goes soft. The seeds are
+  // constants on purpose: the film travels but the gate does not, so a border
+  // that boiled frame to frame would give the whole thing away.
+  float wob = 0.013;
+  float bl = 0.020 + (vnoise(vec2(vUv.y * 13.0, 4.20)) - 0.5) * wob;
+  float br = 0.020 + (vnoise(vec2(vUv.y * 13.0, 8.71)) - 0.5) * wob;
+  float bt = 0.017 + (vnoise(vec2(vUv.x * 13.0, 2.35)) - 0.5) * wob;
+  float bb = 0.017 + (vnoise(vec2(vUv.x * 13.0, 6.04)) - 0.5) * wob;
+  float gate = smoothstep(0.0, bl, vUv.x) * smoothstep(0.0, br, 1.0 - vUv.x) *
+               smoothstep(0.0, bt, vUv.y) * smoothstep(0.0, bb, 1.0 - vUv.y);
+  col *= gate;
 
   gl_FragColor = vec4(col, 1.0);
 }`
@@ -227,6 +284,10 @@ export class FilmProjector {
     this.raf = 0
     this.source = null
     this.running = false
+    // Idle state runs blank leader; flicker is the shutter, and it is stilled
+    // once recording starts.
+    this.blank = true
+    this.flicker = true
 
     // Film-frame state, advanced at 18fps rather than display rate.
     this.frameSeed = Math.random() * 1000
@@ -268,7 +329,7 @@ export class FilmProjector {
 
     // Shutter flicker, with the motor settling over the first second.
     const runUp = Math.max(0, 1 - elapsed / 1.1)
-    this.exposure = 1 + (Math.random() - 0.5) * (0.045 + runUp * 0.22)
+    this.exposure = this.flicker ? 1 + (Math.random() - 0.5) * (0.045 + runUp * 0.22) : 1
 
     // Weave: vertical drift dominates, with the occasional jolt.
     this.weavePhase += 0.28
@@ -282,10 +343,10 @@ export class FilmProjector {
   render(now) {
     const gl = this.gl
     const src = this.source
-    if (!src) return
+    if (!src && !this.blank) return
 
-    const vw = src.videoWidth || src.naturalWidth || src.width
-    const vh = src.videoHeight || src.naturalHeight || src.height
+    const vw = (src && (src.videoWidth || src.naturalWidth || src.width)) || this.canvas.width
+    const vh = (src && (src.videoHeight || src.naturalHeight || src.height)) || this.canvas.height
     if (!vw || !vh) return
 
     const elapsed = (now - this.startedAt) / 1000
@@ -296,16 +357,20 @@ export class FilmProjector {
     if (isNewFrame) {
       this.lastFilmFrame = filmFrame
       this.advanceFrame(elapsed)
-      gl.bindTexture(gl.TEXTURE_2D, this.srcTex)
-      try {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src)
-      } catch {
-        return // frame not decodable yet
+      if (src) {
+        gl.bindTexture(gl.TEXTURE_2D, this.srcTex)
+        try {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src)
+        } catch {
+          return // frame not decodable yet
+        }
       }
     }
 
     const [a, b] = this.targets
+    const blank = this.blank || !src
 
+    if (!blank) {
     // pass 1 — bright pass + horizontal blur
     gl.bindFramebuffer(gl.FRAMEBUFFER, a.fbo)
     gl.viewport(0, 0, a.w, a.h)
@@ -314,6 +379,8 @@ export class FilmProjector {
     gl.bindTexture(gl.TEXTURE_2D, this.srcTex)
     gl.uniform1i(gl.getUniformLocation(this.progBright, 'uTex'), 0)
     gl.uniform2f(gl.getUniformLocation(this.progBright, 'uTexel'), 1 / a.w, 1 / a.h)
+    gl.uniform2f(gl.getUniformLocation(this.progBright, 'uSrcSize'), vw, vh)
+    gl.uniform2f(gl.getUniformLocation(this.progBright, 'uOutSize'), this.canvas.width, this.canvas.height)
     this.drawQuad(this.progBright)
 
     // pass 2 — vertical blur
@@ -324,6 +391,7 @@ export class FilmProjector {
     gl.uniform1i(gl.getUniformLocation(this.progBlur, 'uTex'), 0)
     gl.uniform2f(gl.getUniformLocation(this.progBlur, 'uTexel'), 1 / b.w, 1 / b.h)
     this.drawQuad(this.progBlur)
+    }
 
     // pass 3 — composite
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
@@ -337,19 +405,23 @@ export class FilmProjector {
     gl.bindTexture(gl.TEXTURE_2D, b.tex)
     gl.uniform1i(gl.getUniformLocation(p, 'uBloom'), 1)
     gl.uniform2f(gl.getUniformLocation(p, 'uRes'), this.canvas.width, this.canvas.height)
+    gl.uniform2f(gl.getUniformLocation(p, 'uSrcSize'), vw, vh)
+    gl.uniform2f(gl.getUniformLocation(p, 'uOutSize'), this.canvas.width, this.canvas.height)
     gl.uniform1f(gl.getUniformLocation(p, 'uSeed'), this.frameSeed)
     gl.uniform2f(gl.getUniformLocation(p, 'uWeave'), this.weave[0], this.weave[1])
     gl.uniform1f(gl.getUniformLocation(p, 'uExposure'), this.exposure)
     // The lamp flares up as the motor comes to speed, then settles.
     gl.uniform1f(gl.getUniformLocation(p, 'uStartup'), Math.max(0, 1 - elapsed / 0.75) ** 2)
-    gl.uniform1f(gl.getUniformLocation(p, 'uGrain'), 0.055)
-    gl.uniform1f(gl.getUniformLocation(p, 'uDust'), 0.00035)
+    gl.uniform1f(gl.getUniformLocation(p, 'uGrain'), blank ? 0.16 : 0.055)
+    gl.uniform1f(gl.getUniformLocation(p, 'uDust'), blank ? 0.0011 : 0.00035)
+    gl.uniform1f(gl.getUniformLocation(p, 'uBlank'), blank ? 1 : 0)
     this.drawQuad(p)
     gl.activeTexture(gl.TEXTURE0)
   }
 
   start(source, width, height) {
     this.source = source
+    this.blank = !source
     this.resize(width, height)
     this.startedAt = performance.now()
     this.lastFilmFrame = -1
@@ -368,6 +440,12 @@ export class FilmProjector {
     cancelAnimationFrame(this.raf)
     this.source = null
   }
+
+  // Blank leader before the camera is live.
+  startBlank(width, height) {
+    this.blank = true
+    this.start(null, width, height)
+  }
 }
 
 // A single still put through the same grade, used for the neighbouring frames
@@ -383,6 +461,7 @@ export function developStill(img, width, height) {
     return null
   }
   projector.source = img
+  projector.blank = false
   projector.resize(width, height)
   projector.startedAt = performance.now() - 5000 // past the run-up flare
   projector.lastFilmFrame = -1

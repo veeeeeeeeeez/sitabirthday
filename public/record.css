@@ -1,13 +1,10 @@
-/* Recording page: photo tiles packed into columns either side of the camera,
-   which carries its own controls. Deliberately wordless. */
+/* Recording page: a single strip of Super 8 running off the top and bottom of
+   a black screen, with the controls off the film to the right. */
 
 .record-body {
-  background: #fff;
+  background: #000;
   min-height: 100svh;
-  display: grid;
-  place-items: center;
-  /* Plenty of air on all four edges. */
-  padding: clamp(1.25rem, 5vw, 5rem);
+  overflow: hidden;
 }
 
 .record-body .backdrop,
@@ -15,215 +12,30 @@
   display: none;
 }
 
-.mosaic {
+.filmstage {
+  position: relative;
+  height: 100svh;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: clamp(0.45rem, 1.6vw, 0.8rem);
-  width: 100%;
-  max-width: 25rem;
-  perspective: 1400px;
-}
-
-/* Each side is a set of vertical runs. Tiles are either 4:3 or 3:4, so the
-   runs end at different heights and the block reads as packed but varied
-   rather than as a plain grid. */
-.col-group {
-  display: flex;
-  align-items: flex-start;
-  gap: clamp(0.45rem, 1.6vw, 0.8rem);
-  width: 100%;
-}
-
-.col {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.45rem, 1.6vw, 0.8rem);
-  flex: 1;
-  min-width: 0;
-}
-
-/* --------------------------------------------------------------- the tiles */
-
-.tile {
-  position: relative;
-  width: 100%;
-  aspect-ratio: var(--ratio, 4 / 3);
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  animation: tile-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
-}
-
-@keyframes tile-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.97);
-  }
-}
-
-/* A tile in flight between positions passes over its neighbours. */
-.tile.is-flying {
-  z-index: 8;
-}
-
-.tile-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  /* Pointer tilt and the click-to-flip angle compose in one transform. */
-  transform: rotateX(var(--rx, 0deg)) rotateY(calc(var(--ry, 0deg) + var(--flip, 0deg)))
-    scale(var(--pop, 1));
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.25, 1);
-}
-
-.tile:hover {
-  z-index: 5;
-}
-
-/* Track the pointer closely while hovering, then ease back on release. */
-.tile:hover .tile-inner {
-  --pop: 1.18;
-  transition: transform 0.07s ease-out;
-}
-
-.tile.is-flipped {
-  --flip: 180deg;
-  z-index: 6;
-}
-
-.tile.is-flipped .tile-inner {
-  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.25, 1);
-}
-
-.tile-face {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 10px;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  box-shadow: 0 1px 3px rgba(20, 18, 15, 0.1);
-  transition: box-shadow 0.35s ease;
-}
-
-.tile:hover .tile-face {
-  box-shadow: 0 28px 60px rgba(20, 18, 15, 0.28);
-}
-
-.tile-front {
-  background: #f2f0ed;
-}
-
-.tile-front img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  user-select: none;
-}
-
-.tile-back {
-  transform: rotateY(180deg);
-  display: grid;
-  place-items: center;
-  padding: 0.8rem;
-  background: #16130f;
-}
-
-.tile-back p {
-  margin: 0;
-  font-family: var(--display);
-  font-style: italic;
-  font-size: clamp(0.72rem, 0.95vw, 1rem);
-  line-height: 1.3;
-  text-align: center;
-  color: #fff;
-  text-wrap: balance;
-}
-
-.tile:focus-visible {
-  outline: none;
-}
-
-.tile:focus-visible .tile-face {
-  box-shadow: 0 0 0 2px var(--ink);
-}
-
-/* On a phone the full stack would push the camera below the fold, so only the
-   first two tiles of each column are shown. Shuffling still rotates photos
-   through those visible slots. */
-@media (max-width: 59.99rem) {
-  .col > .tile:nth-child(n + 3) {
-    display: none;
-  }
-}
-
-/* --------------------------------------------------------------- the pane */
-
-.pane {
-  position: relative;
-  width: 100%;
-  flex-shrink: 0;
-}
-
-@media (min-width: 60rem) {
-  .mosaic {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    max-width: 74rem;
-    gap: clamp(0.6rem, 1.3vw, 1.1rem);
-  }
-
-  .col-group {
-    flex: 1;
-  }
-
-  .pane {
-    flex: 0 0 clamp(19rem, 30vw, 26rem);
-  }
+  justify-content: center;
+  gap: clamp(1rem, 4vw, 3rem);
 }
 
 /* ------------------------------------------------------------ the reel */
 
-/* The strip itself: film base, perforation column down the left, frames
-   stacked so the ones above and below are cropped by the strip edges. */
 .reel {
-  --frame-gap: 3.5%;
+  --frame-gap: 2.6%;
   position: relative;
-  width: 100%;
+  height: 100svh;
+  /* Width is driven by height so the strip always fills the screen top to
+     bottom, whatever the viewport. */
+  width: min(46svh, 62vw);
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 15% 1fr;
-  /* Roughly 2.2 frame pitches tall, so the live frame sits whole between two
-     substantial slices of the frames either side of it. */
-  aspect-ratio: 3 / 4.2;
   overflow: hidden;
-  border-radius: 3px;
   background: #0a0908;
-  box-shadow: 0 2px 10px rgba(20, 18, 15, 0.16), 0 24px 60px rgba(20, 18, 15, 0.18);
   transform: translateY(var(--drift, 0));
-}
-
-/* The raw film edge: a hint of blue base and light piping down the margin. */
-.reel::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2.5%;
-  background: linear-gradient(
-    to right,
-    rgba(28, 40, 92, 0.75),
-    rgba(12, 14, 24, 0.5) 55%,
-    rgba(8, 8, 8, 0)
-  );
-  z-index: 3;
-  pointer-events: none;
 }
 
 .reel-perf {
@@ -260,34 +72,25 @@
   position: relative;
   flex: 0 0 auto;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  /* Taller than a true Super 8 gate, because everyone is holding a phone. */
+  aspect-ratio: 1 / 1.15;
   overflow: hidden;
-  background: #12100e;
+  background: #0d0c0a;
 }
 
-/* Neighbouring submissions. JS puts them through the same shader, but the
-   filter here is the floor so they never sit clean next to a graded frame. */
+/* Neighbouring submissions. JS puts them through the same shader, so they
+   arrive already graded and with the same soft, uneven gate edge. */
 .frame--still {
   background-size: cover;
   background-position: center;
-  filter: saturate(0.82) contrast(1.04) brightness(0.62) sepia(0.16);
+  filter: brightness(0.62);
 }
 
-/* They are the next and previous frames on the roll, not the subject, so the
-   gate light falls off toward the strip edges. */
 .frame--still::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(8, 7, 6, 0.85), rgba(8, 7, 6, 0.1));
-}
-
-#frameNext::after {
-  background: linear-gradient(to top, rgba(8, 7, 6, 0.85), rgba(8, 7, 6, 0.1));
-}
-
-.frame--live {
-  background: #0d0c0a;
+  background: radial-gradient(ellipse at center, rgba(6, 5, 4, 0.1), rgba(6, 5, 4, 0.7));
 }
 
 /* ---------------------------------------------------------------- camera */
@@ -302,7 +105,7 @@
   display: block;
 }
 
-/* The camera feed is only ever a source texture for the shader; what anyone
+/* The camera feed is only ever a source texture for the shader. What anyone
    sees, and what gets recorded, is the canvas. */
 #preview {
   opacity: 0;
@@ -319,23 +122,23 @@
   display: none;
 }
 
+/* The blank leader is drawn by the shader, so this only shows a message. */
 .stage-idle {
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
+  place-items: end center;
   padding: 1.25rem;
-  background: #14120f;
-  z-index: 2;
+  pointer-events: none;
 }
 
 .stage-idle p {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   line-height: 1.5;
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.42);
   max-width: 15rem;
 }
 
@@ -378,76 +181,20 @@
   }
 }
 
-.flip-cam {
-  position: absolute;
-  top: 0.55rem;
-  right: 0.6rem;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  border: none;
-  border-radius: 50%;
-  background: rgba(10, 8, 6, 0.45);
-  color: #f4e9d8;
-  font-size: 0.8rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 5;
-}
+/* ------------------------------------------------------- controls column */
 
-.flip-cam.is-visible {
+.controls-col {
   display: flex;
-}
-
-.filepick input {
-  display: none;
-}
-
-.filepick label {
-  position: absolute;
-  top: 0.55rem;
-  left: 0.6rem;
-  display: grid;
-  place-items: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  margin: 0;
-  border-radius: 50%;
-  background: rgba(10, 8, 6, 0.45);
-  color: #f4e9d8;
-  font-size: 0.75rem;
-  cursor: pointer;
-  z-index: 5;
-}
-
-.filepick[hidden] {
-  display: none;
-}
-
-/* ------------------------------------------------------------- shutter */
-
-.stage-shutter {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem 1rem 1.15rem;
-  background: linear-gradient(to top, rgba(12, 10, 8, 0.45), rgba(12, 10, 8, 0));
-  z-index: 4;
-}
-
-.stage-shutter[hidden] {
-  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  flex: 0 0 auto;
 }
 
 .shutter {
   position: relative;
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 4rem;
+  height: 4rem;
   padding: 0;
   border: none;
   background: none;
@@ -456,19 +203,23 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.shutter[hidden] {
+  display: none;
+}
+
 .shutter .ring {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.75);
 }
 
 .shutter .core {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #e5484d;
@@ -477,21 +228,21 @@
 }
 
 .shutter[data-state='recording'] .core {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.4rem;
+  height: 1.4rem;
   border-radius: 4px;
 }
 
 .shutter:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .shutter svg {
   position: absolute;
-  inset: -3px;
-  width: calc(100% + 6px);
-  height: calc(100% + 6px);
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
   transform: rotate(-90deg);
   pointer-events: none;
 }
@@ -509,6 +260,55 @@
   opacity: 1;
 }
 
+.ghost-btn,
+.filepick label {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.ghost-btn {
+  display: none;
+}
+
+.ghost-btn.is-visible {
+  display: grid;
+}
+
+.ghost-btn:hover,
+.filepick label:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+
+.filepick input {
+  display: none;
+}
+
+.filepick[hidden] {
+  display: none;
+}
+
+.hint-line {
+  margin: 0;
+  min-height: 0.9rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* --------------------------------------------------------------- review */
 
 .review {
@@ -518,9 +318,9 @@
   bottom: 0;
   display: none;
   gap: 0.4rem;
-  padding: 2.75rem 0.9rem 1rem;
-  background: linear-gradient(to top, rgba(12, 10, 8, 0.85), rgba(12, 10, 8, 0));
-  z-index: 4;
+  padding: 3rem 0.9rem 1rem;
+  background: linear-gradient(to top, rgba(6, 5, 4, 0.92), rgba(6, 5, 4, 0));
+  z-index: 6;
 }
 
 .review.is-visible {
@@ -549,7 +349,7 @@
 }
 
 .review input[type='text']::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .review input[type='text']:focus {
@@ -566,9 +366,9 @@
 .pill {
   flex: 1;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   letter-spacing: 0.06em;
-  padding: 0.55rem 1rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 100px;
   border: 1px solid rgba(255, 255, 255, 0.45);
   background: transparent;
@@ -584,7 +384,7 @@
 .pill--solid {
   background: #fff;
   border-color: #fff;
-  color: var(--ink);
+  color: #12100e;
 }
 
 .pill--solid:hover:not(:disabled) {
@@ -606,9 +406,9 @@
   bottom: 0;
   height: 3px;
   display: none;
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.25);
   cursor: pointer;
-  z-index: 5;
+  z-index: 7;
   touch-action: none;
 }
 
@@ -616,7 +416,6 @@
   display: block;
 }
 
-/* A larger hit area than the 3px the eye sees. */
 .scrub::before {
   content: '';
   position: absolute;
@@ -664,36 +463,42 @@
   text-align: center;
 }
 
-.hint-line {
-  margin: 0.5rem 0 0;
-  min-height: 0.9rem;
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.04em;
-  color: var(--ink-faint);
-}
-
 .error {
-  margin-top: 0.5rem;
-  padding: 0.55rem 0.75rem;
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  max-width: min(26rem, 88vw);
+  padding: 0.55rem 0.85rem;
   border-radius: 8px;
-  background: rgba(160, 44, 32, 0.08);
-  border: 1px solid rgba(160, 44, 32, 0.2);
-  color: #8c2b1e;
+  background: rgba(120, 30, 22, 0.9);
+  color: #ffd9d2;
   font-family: var(--mono);
   font-size: 0.62rem;
   line-height: 1.5;
+  text-align: center;
   display: none;
+  z-index: 10;
 }
 
 .error.is-visible {
   display: block;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tile,
-  .tile-inner {
-    transition: none;
+/* On a phone the controls tuck under the strip rather than beside it. */
+@media (max-width: 34rem) {
+  .filmstage {
+    gap: 0;
+  }
+
+  .reel {
+    width: min(52svh, 86vw);
+  }
+
+  .controls-col {
+    position: absolute;
+    right: max(0.75rem, calc((100vw - min(52svh, 86vw)) / 4 - 1.6rem));
+    top: 50%;
+    transform: translateY(-50%);
   }
 }

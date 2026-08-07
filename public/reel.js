@@ -6,8 +6,8 @@ import { developStill } from '/film.js'
 
 const reel = document.getElementById('reel')
 const perf = document.getElementById('reelPerf')
-const framePrev = document.getElementById('framePrev')
-const frameNext = document.getElementById('frameNext')
+// Every still frame on the strip, in order, so the roll runs off both edges.
+const stills = [...document.querySelectorAll('.frame--still')]
 
 /* ------------------------------------------------------- perforations */
 
@@ -95,10 +95,11 @@ async function fillNeighbours() {
   // the same photos the tiles use.
   const pool = frames.length >= 2 ? frames : FALLBACK
   const first = Math.floor(Math.random() * pool.length)
-  const second = (first + 1) % pool.length
 
-  await dress(framePrev, pool[first])
-  await dress(frameNext, pool[second])
+  // Walk the pool so neighbouring frames are never the same picture.
+  await Promise.all(
+    stills.map((el, i) => dress(el, pool[(first + i) % pool.length])),
+  )
 }
 
 fillNeighbours()
