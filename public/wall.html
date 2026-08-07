@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Your birthday scrapbook</title>
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/wall.css" />
+  </head>
+  <body class="wall-body">
+    <header class="wall-header">
+      <p class="eyebrow">Happy birthday</p>
+      <h1><span class="accent" data-honoree>Sita</span></h1>
+      <p class="lede wall-lede">
+        <span id="count">Your friends</span> left you something. Tap a card to play it.
+      </p>
+    </header>
+
+    <main class="wrap wrap--wide">
+      <div class="board" id="board" aria-live="polite">
+        <p class="board-status" id="status">Opening the scrapbook&hellip;</p>
+      </div>
+    </main>
+
+    <footer class="wall-footer">
+      <p>Made with love by everyone who misses you. 💛</p>
+    </footer>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Video message" hidden>
+      <button class="lightbox-close" id="lbClose" aria-label="Close">&times;</button>
+      <button class="lightbox-nav lightbox-prev" id="lbPrev" aria-label="Previous message">&#8249;</button>
+      <button class="lightbox-nav lightbox-next" id="lbNext" aria-label="Next message">&#8250;</button>
+
+      <div class="lightbox-inner">
+        <div class="lightbox-stage">
+          <video id="lbVideo" controls playsinline preload="metadata"></video>
+        </div>
+        <div class="lightbox-caption">
+          <p class="lightbox-name" id="lbName"></p>
+          <p class="lightbox-message" id="lbMessage"></p>
+          <p class="lightbox-index" id="lbIndex"></p>
+        </div>
+      </div>
+    </div>
+
+    <script src="/wall.js" type="module"></script>
+  </body>
+</html>

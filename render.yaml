@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: sitabirthday
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: HONOREE_NAME
+        value: Sita
+      - key: MAX_UPLOAD_MB
+        value: '200'
+      # Set these in the Render dashboard, not here -- they're secrets.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: VIEW_KEY
+        sync: false
+      - key: ADMIN_KEY
+        sync: false

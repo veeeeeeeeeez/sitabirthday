@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Send a birthday message</title>
+    <meta name="description" content="Record a short video wishing a happy birthday." />
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="eyebrow">You're invited to</p>
+      <h1>Wish <span class="accent" data-honoree>Sita</span> a happy birthday</h1>
+      <p class="lede">
+        Record a short video &mdash; say hi, tell a story, sing badly. We're collecting them all
+        into a scrapbook she'll get to flip through on her birthday.
+        <strong>Keep it under a minute or two.</strong>
+      </p>
+
+      <form class="card" id="form" novalidate>
+        <div class="field">
+          <label for="name">Your name <span class="hint">&mdash; so she knows who it's from</span></label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            maxlength="60"
+            autocomplete="name"
+            placeholder="e.g. Priya from college"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="message">A note <span class="hint">&mdash; optional</span></label>
+          <textarea
+            id="message"
+            name="message"
+            maxlength="500"
+            placeholder="Anything you want written next to your video."
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label for="video">Your video</label>
+          <label class="filedrop" id="filedrop" for="video" tabindex="0">
+            <span class="icon" aria-hidden="true">🎥</span>
+            <span class="primary" id="dropPrimary">Tap to record or choose a video</span>
+            <span class="secondary" id="dropSecondary">MP4 or MOV &middot; up to <span data-max-mb>200</span>MB</span>
+            <input type="file" id="video" name="video" accept="video/*" required />
+          </label>
+
+          <div class="preview" id="preview">
+            <img id="previewThumb" alt="" hidden />
+            <div class="thumb-fallback" id="previewFallback" aria-hidden="true"></div>
+            <div class="meta">
+              <div class="filename" id="previewName"></div>
+              <div class="filesize" id="previewSize"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn" type="submit" id="submit">Send it 🎉</button>
+
+        <div class="progress" id="progress">
+          <div class="track"><div class="bar" id="progressBar"></div></div>
+          <div class="label" id="progressLabel">Uploading&hellip;</div>
+        </div>
+
+        <div class="error" id="error" role="alert"></div>
+      </form>
+
+      <p class="footnote">Only <span data-honoree>Sita</span> will see these. Promise.</p>
+    </main>
+
+    <script src="/upload.js" type="module"></script>
+  </body>
+</html>
