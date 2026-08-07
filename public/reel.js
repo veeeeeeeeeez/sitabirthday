@@ -16,28 +16,38 @@ const stills = [...document.querySelectorAll('.frame--still')]
 // resizes, and misaligned perfs are the first thing that reads as fake.
 function layOutPerforations() {
   const reelBox = reel.getBoundingClientRect()
-  if (!reelBox.height) return
+  if (!reelBox.height || !reelBox.width) return
 
   const frames = [...reel.querySelectorAll('.frame')]
   if (!frames.length) return
 
+  // The strip runs down the screen on a phone and across it on a desktop, so
+  // read the direction off the layout rather than assuming one.
+  const framesEl = reel.querySelector('.reel-frames')
+  const horizontal = getComputedStyle(framesEl).flexDirection.startsWith('row')
+
+  const box = (el) => el.getBoundingClientRect()
+  const along = (r) => (horizontal ? r.left : r.top)
+  const size = (r) => (horizontal ? r.width : r.height)
+  const extent = horizontal ? reelBox.width : reelBox.height
+  const origin = horizontal ? reelBox.left : reelBox.top
+
   const pitch =
     frames.length > 1
-      ? frames[1].getBoundingClientRect().top - frames[0].getBoundingClientRect().top
-      : frames[0].getBoundingClientRect().height
+      ? along(box(frames[1])) - along(box(frames[0]))
+      : size(box(frames[0]))
+  if (!pitch) return
 
-  const firstCentre =
-    frames[0].getBoundingClientRect().top + frames[0].getBoundingClientRect().height / 2 -
-    reelBox.top
+  const firstCentre = along(box(frames[0])) + size(box(frames[0])) / 2 - origin
 
   perf.textContent = ''
-  // Run past both ends so the column never stops short of the strip edge.
+  // Run past both ends so the row never stops short of the strip edge.
   for (let i = -2; i <= frames.length + 2; i++) {
-    const y = firstCentre + pitch * i
-    if (y < -pitch || y > reelBox.height + pitch) continue
+    const at = firstCentre + pitch * i
+    if (at < -pitch || at > extent + pitch) continue
     const hole = document.createElement('span')
     hole.className = 'perf'
-    hole.style.top = `${(y / reelBox.height) * 100}%`
+    hole.style[horizontal ? 'left' : 'top'] = `${(at / extent) * 100}%`
     perf.append(hole)
   }
 }

@@ -243,8 +243,12 @@ function startRecording() {
   timer.classList.add('is-visible')
   flip.classList.remove('is-visible')
   filepick.hidden = true
-  // The flicker belongs to the idle leader; hold the shutter steady on a take.
-  if (projector) projector.flicker = false
+  // The flicker belongs to the idle leader. A take holds still: no shutter
+  // flicker, no scratch flashes, weave damped.
+  if (projector) {
+    projector.flicker = false
+    projector.steady = true
+  }
   hint.textContent = 'recording'
   timerText.textContent = '0:00'
 
@@ -254,7 +258,10 @@ function startRecording() {
 
 function stopRecording() {
   clearInterval(tickHandle)
-  if (projector) projector.flicker = true
+  if (projector) {
+    projector.flicker = true
+    projector.steady = false
+  }
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   shutter.dataset.state = 'idle'
   shutter.setAttribute('aria-label', 'Record a video')

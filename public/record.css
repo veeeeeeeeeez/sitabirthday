@@ -8,6 +8,29 @@
   overflow: hidden;
 }
 
+/* Fine grain across the base. Two turbulence layers at slightly different
+   frequencies: the high one keeps it sharp and granular, the softer one under
+   it stops it looking like digital static. */
+.record-body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.42;
+  mix-blend-mode: screen;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='1'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23a)' opacity='0.17'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23b)' opacity='0.10'/%3E%3C/svg%3E");
+  background-size: 220px 220px, 320px 320px;
+}
+
+/* The strip carries its own grain from the shader, so keep the page grain off
+   the picture itself. */
+.reel {
+  z-index: 2;
+}
+
 .filmstage {
   position: relative;
   height: 100svh;
@@ -106,6 +129,64 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at center, rgba(6, 5, 4, 0.1), rgba(6, 5, 4, 0.7));
+}
+
+/* On a wide screen the roll turns: it runs across the picture with the
+   perforations along the top edge and the frames side by side. */
+@media (min-width: 60rem) {
+  .filmstage {
+    flex-direction: column;
+    gap: clamp(1rem, 3vh, 2.5rem);
+  }
+
+  .reel {
+    width: 100vw;
+    height: min(60svh, 44vw);
+    grid-template-columns: none;
+    grid-template-rows: 15% 1fr;
+  }
+
+  /* The cut edge now runs along the top of the strip. */
+  .reel::before {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: auto;
+    width: auto;
+    height: 3px;
+    background: linear-gradient(
+      to bottom,
+      rgba(40, 58, 122, 0.55),
+      rgba(22, 30, 64, 0.28) 60%,
+      rgba(10, 9, 8, 0)
+    );
+  }
+
+  /* Perforations sit on the horizontal axis now; JS supplies the left offset. */
+  .perf {
+    top: 50%;
+    left: auto;
+    width: auto;
+    height: 52%;
+    aspect-ratio: 0.92 / 1;
+  }
+
+  .reel-frames {
+    flex-direction: row;
+    justify-content: center;
+    padding-right: 0;
+    padding-bottom: 6%;
+    min-width: 0;
+  }
+
+  .frame {
+    width: auto;
+    height: 100%;
+  }
+
+  .controls-col {
+    flex-direction: row;
+  }
 }
 
 /* ---------------------------------------------------------------- camera */

@@ -214,6 +214,16 @@ void main() {
   float bb = 0.017 + (vnoise(vec2(vUv.x * 13.0, 6.04)) - 0.5) * wob;
   float gate = smoothstep(0.0, bl, vUv.x) * smoothstep(0.0, br, 1.0 - vUv.x) *
                smoothstep(0.0, bt, vUv.y) * smoothstep(0.0, bb, 1.0 - vUv.y);
+
+  // Black corruption: the emulsion has lifted away in patches along the
+  // border, so on top of the wandering edge there are places where the black
+  // bites much further into the picture. Patchy, not a uniform inset.
+  float dEdge = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
+  float patch = vnoise(vec2(vUv.x * 6.0 + vUv.y * 6.0, vUv.y * 6.0 - vUv.x * 4.0) + 17.0);
+  float fineBite = vnoise(vec2(vUv.x * 41.0, vUv.y * 41.0) + 5.0);
+  float bite = smoothstep(0.52, 0.95, patch) * (0.030 + fineBite * 0.030);
+  gate *= smoothstep(0.0, max(bite, 0.0008), dEdge);
+
   col *= gate;
 
   gl_FragColor = vec4(col, 1.0);
@@ -288,6 +298,10 @@ export class FilmProjector {
     // once recording starts.
     this.blank = true
     this.flicker = true
+    // A take holds still: no shutter flicker, no scratch flashes, and the
+    // weave damped right down. Everything that reads as "flickering" comes
+    // from one of those three.
+    this.steady = false
 
     // Film-frame state, advanced at 18fps rather than display rate.
     this.frameSeed = Math.random() * 1000
@@ -333,10 +347,11 @@ export class FilmProjector {
 
     // Weave: vertical drift dominates, with the occasional jolt.
     this.weavePhase += 0.28
-    const jump = Math.random() < 0.03 ? (Math.random() - 0.5) * 0.012 : 0
+    const damp = this.steady ? 0.3 : 1
+    const jump = !this.steady && Math.random() < 0.03 ? (Math.random() - 0.5) * 0.012 : 0
     this.weave = [
-      Math.sin(this.weavePhase * 0.7) * 0.0016 + (Math.random() - 0.5) * 0.0011,
-      Math.cos(this.weavePhase * 0.43) * 0.0034 + (Math.random() - 0.5) * 0.0018 + jump,
+      (Math.sin(this.weavePhase * 0.7) * 0.0016 + (Math.random() - 0.5) * 0.0011) * damp,
+      (Math.cos(this.weavePhase * 0.43) * 0.0034 + (Math.random() - 0.5) * 0.0018 + jump) * damp,
     ]
   }
 
@@ -411,9 +426,12 @@ export class FilmProjector {
     gl.uniform2f(gl.getUniformLocation(p, 'uWeave'), this.weave[0], this.weave[1])
     gl.uniform1f(gl.getUniformLocation(p, 'uExposure'), this.exposure)
     // The lamp flares up as the motor comes to speed, then settles.
-    gl.uniform1f(gl.getUniformLocation(p, 'uStartup'), Math.max(0, 1 - elapsed / 0.75) ** 2)
+    gl.uniform1f(
+      gl.getUniformLocation(p, 'uStartup'),
+      this.steady ? 0 : Math.max(0, 1 - elapsed / 0.75) ** 2,
+    )
     gl.uniform1f(gl.getUniformLocation(p, 'uGrain'), blank ? 0.16 : 0.055)
-    gl.uniform1f(gl.getUniformLocation(p, 'uDust'), blank ? 0.0011 : 0.00035)
+    gl.uniform1f(gl.getUniformLocation(p, 'uDust'), this.steady ? 0 : blank ? 0.0011 : 0.00035)
     gl.uniform1f(gl.getUniformLocation(p, 'uBlank'), blank ? 1 : 0)
     this.drawQuad(p)
     gl.activeTexture(gl.TEXTURE0)
