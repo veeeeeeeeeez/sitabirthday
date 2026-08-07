@@ -116,10 +116,10 @@ fillNeighbours()
 
 /* --------------------------------------------------------- base grain */
 
-// Grain on the film base around the strip. Drawn per pixel so the mean lands
-// exactly on the base colour: a CSS screen blend can only ever lighten, which
-// is what left the page sitting paler than the film. Rendered small and
-// stretched, so it is granular but not razor-edged like digital static.
+// Static grain in the film base. Drawn per pixel so the mean lands exactly on
+// the base colour: a CSS screen blend can only ever lighten, which is what left
+// the page sitting paler than the film. Rendered small and stretched, so it is
+// granular but not razor-edged like digital static.
 function startBaseGrain() {
   const canvas = document.createElement('canvas')
   canvas.className = 'bg-grain'
@@ -156,19 +156,14 @@ function startBaseGrain() {
     ctx.putImageData(frame, 0, 0)
   }
 
+  // Drawn once and left alone: this is the grain in the film base itself, not
+  // grain running past a gate, so it should not move.
   fit()
   draw()
   addEventListener('resize', () => {
     fit()
     draw()
   })
-
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // Slow enough to read as film rather than television static.
-    setInterval(() => {
-      if (!document.hidden) draw()
-    }, 110)
-  }
 }
 
 startBaseGrain()

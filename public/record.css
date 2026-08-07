@@ -171,7 +171,9 @@
     flex-direction: row;
     justify-content: center;
     padding-right: 0;
-    padding-bottom: 6%;
+    /* Sit the frames lower in the strip, clear of the perforation rail. */
+    padding-top: 7%;
+    padding-bottom: 1%;
     min-width: 0;
   }
 
