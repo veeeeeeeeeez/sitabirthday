@@ -27,9 +27,16 @@ if lsof -ti tcp:"$PORT" >/dev/null 2>&1; then
   sleep 1
 fi
 
+# Read VIEW_KEY out of .env so the banner prints a link that actually works.
+VIEW_KEY="$(grep -E '^VIEW_KEY=' .env | head -1 | cut -d= -f2- | tr -d '"'"'"' ')"
+
 echo
 echo "  Upload page   http://localhost:$PORT"
-echo "  The gallery   http://localhost:$PORT/wall/\$VIEW_KEY"
+if [ -n "$VIEW_KEY" ]; then
+  echo "  The gallery   http://localhost:$PORT/wall/$VIEW_KEY"
+else
+  echo "  The gallery   http://localhost:$PORT/wall   (VIEW_KEY is unset)"
+fi
 echo
 
 exec node --env-file=.env server.js
