@@ -5,40 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>The exhibition</title>
     <meta name="robots" content="noindex" />
-    <meta name="theme-color" content="#f7f5f1" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/wall.css" />
-    <style>
-      .backdrop {
-        --art: url('/img/primavera.jpg');
-      }
-    </style>
   </head>
-  <body>
-    <div class="backdrop"></div>
-    <div class="grain"></div>
-
+  <body class="wall-body">
     <header class="wall-header">
-      <p class="eyebrow" id="eyebrow">A private exhibition</p>
+      <p class="eyebrow">A private exhibition</p>
       <h1><em data-honoree>Sita</em></h1>
       <p class="lede" id="subtitle">Assembled by the people who love you.</p>
-      <div class="rule"><span></span></div>
     </header>
 
-    <main class="wrap wrap--wide">
-      <div class="board" id="board" aria-live="polite">
+    <div class="wall-meta">
+      <span id="countLabel">&nbsp;</span>
+      <span id="yearLabel">MMXXVI</span>
+    </div>
+
+    <main>
+      <div class="gallery is-empty" id="gallery" aria-live="polite">
         <p class="board-status" id="status">Unlocking the gallery&hellip;</p>
+      </div>
+
+      <div class="scroll-cue">
+        <p id="cueText">&nbsp;</p>
+        <div class="arrows">
+          <button type="button" id="scrollLeft" aria-label="Scroll left">&#8249;</button>
+          <button type="button" id="scrollRight" aria-label="Scroll right">&#8250;</button>
+        </div>
       </div>
     </main>
 
     <footer class="wall-footer">
-      <p>Happy birthday.</p>
+      <p>Happy birthday</p>
     </footer>
 
     <div

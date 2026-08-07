@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id)
 
-const board = $('board')
+const gallery = $('gallery')
 const status = $('status')
 const lightbox = $('lightbox')
 const lbVideo = $('lbVideo')
@@ -9,22 +9,23 @@ const lbMessage = $('lbMessage')
 const lbIndex = $('lbIndex')
 const lbPrev = $('lbPrev')
 const lbNext = $('lbNext')
+const scrollLeft = $('scrollLeft')
+const scrollRight = $('scrollRight')
 
 let submissions = []
 let current = -1
 let lastFocused = null
 
-/* ------------------------------------------------------------------ works */
+const pad = (n) => String(n).padStart(2, '0')
 
-// Skip joining words so "Dev & Nisha" reads D and "The Tuesday Run Club" reads T.
 const monogramOf = (name) => name.match(/\p{L}/u)?.[0]?.toUpperCase() ?? '?'
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
-const numeral = (n) => {
-  if (n <= 10) return ROMAN[n - 1]
-  const tens = Math.floor(n / 10)
-  return (tens === 1 ? 'X' : tens === 2 ? 'XX' : tens === 3 ? 'XXX' : `${tens}0`) +
-    (n % 10 ? ROMAN[(n % 10) - 1] : '')
+// Deterministic per-id tilt, so the wall looks hand-placed but never reshuffles
+// between reloads.
+function tiltFor(id) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0
+  return ((Math.abs(hash) % 500) / 100 - 2.5).toFixed(2) // -2.5deg .. +2.5deg
 }
 
 function makeMonogram(name) {
@@ -38,21 +39,21 @@ function buildWork(item, index) {
   const work = document.createElement('button')
   work.type = 'button'
   work.className = 'work'
-  work.style.animationDelay = `${Math.min(index * 60, 1400)}ms`
+  // Every fourth work runs the full height, which stops the two rows reading
+  // as a plain filmstrip.
+  if (index % 4 === 1) work.classList.add('work--tall')
+  work.style.animationDelay = `${Math.min(index * 45, 900)}ms`
   work.setAttribute('aria-label', `Play the message from ${item.name}`)
-
-  const frame = document.createElement('div')
-  frame.className = 'work-frame'
 
   const plate = document.createElement('div')
   plate.className = 'work-plate'
+  plate.style.setProperty('--tilt', `${tiltFor(item.id)}deg`)
 
   if (item.posterUrl) {
     const img = document.createElement('img')
     img.src = item.posterUrl
     img.alt = ''
     img.loading = 'lazy'
-    // An expired or missing poster falls back to the monogram panel.
     img.addEventListener('error', () => {
       img.remove()
       plate.prepend(makeMonogram(item.name))
@@ -66,32 +67,66 @@ function buildWork(item, index) {
   play.className = 'play'
   play.innerHTML = '<span>&#9654;</span>'
   plate.append(play)
-  frame.append(plate)
 
   const label = document.createElement('div')
   label.className = 'work-label'
 
+  const idx = document.createElement('span')
+  idx.className = 'work-index'
+  idx.textContent = pad(index + 1)
+
+  const text = document.createElement('div')
+  text.className = 'work-text'
+
   const name = document.createElement('p')
   name.className = 'work-name'
   name.textContent = item.name
-
-  const meta = document.createElement('p')
-  meta.className = 'work-meta'
-  meta.textContent = `No. ${numeral(index + 1)}`
-
-  label.append(name, meta)
+  text.append(name)
 
   if (item.message) {
     const note = document.createElement('p')
     note.className = 'work-note'
     note.textContent = item.message
-    label.append(note)
+    text.append(note)
   }
 
-  work.append(frame, label)
+  label.append(idx, text)
+  work.append(plate, label)
   work.addEventListener('click', () => open(index))
   return work
 }
+
+/* -------------------------------------------------------------- scrolling */
+
+function updateArrows() {
+  const max = gallery.scrollWidth - gallery.clientWidth
+  scrollLeft.disabled = gallery.scrollLeft <= 2
+  scrollRight.disabled = gallery.scrollLeft >= max - 2
+}
+
+const nudge = (dir) =>
+  gallery.scrollBy({ left: dir * Math.round(gallery.clientWidth * 0.8), behavior: 'smooth' })
+
+scrollLeft.addEventListener('click', () => nudge(-1))
+scrollRight.addEventListener('click', () => nudge(1))
+gallery.addEventListener('scroll', updateArrows, { passive: true })
+window.addEventListener('resize', updateArrows)
+
+// A vertical wheel over the gallery should push it sideways — otherwise a
+// trackpad just scrolls the page past it.
+gallery.addEventListener(
+  'wheel',
+  (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+    const max = gallery.scrollWidth - gallery.clientWidth
+    const atStart = gallery.scrollLeft <= 0 && e.deltaY < 0
+    const atEnd = gallery.scrollLeft >= max && e.deltaY > 0
+    if (atStart || atEnd) return // let the page take over at the ends
+    e.preventDefault()
+    gallery.scrollLeft += e.deltaY
+  },
+  { passive: false },
+)
 
 /* -------------------------------------------------------------- lightbox */
 
@@ -102,10 +137,10 @@ function open(index) {
 
   if (lightbox.hidden) lastFocused = document.activeElement
   lbVideo.src = item.videoUrl
-  lbName.textContent = item.name
+  lbName.textContent = `${pad(index + 1)} — ${item.name}`
   lbMessage.textContent = item.message || ''
   lbMessage.hidden = !item.message
-  lbIndex.textContent = `No. ${numeral(index + 1)} of ${submissions.length}`
+  lbIndex.textContent = `${pad(index + 1)} of ${pad(submissions.length)}`
   lbPrev.disabled = index === 0
   lbNext.disabled = index === submissions.length - 1
 
@@ -135,7 +170,6 @@ lightbox.addEventListener('click', (e) => {
   if (e.target === lightbox) close()
 })
 
-// Roll into the next film, like a reel.
 lbVideo.addEventListener('ended', () => {
   if (current < submissions.length - 1) step(1)
 })
@@ -176,14 +210,18 @@ try {
   status.remove()
 
   if (!submissions.length) {
-    board.innerHTML =
+    gallery.innerHTML =
       '<p class="board-status">The walls are still bare. Check back once the first films arrive.</p>'
   } else {
+    gallery.classList.remove('is-empty')
     const n = submissions.length
-    $('subtitle').textContent = `${n} ${n === 1 ? 'work' : 'works'}, assembled by the people who love you.`
+    $('countLabel').textContent = `${pad(n)} ${n === 1 ? 'work' : 'works'}`
+    $('cueText').textContent = '( scroll sideways )'
+
     const frag = document.createDocumentFragment()
     submissions.forEach((item, i) => frag.append(buildWork(item, i)))
-    board.append(frag)
+    gallery.append(frag)
+    requestAnimationFrame(updateArrows)
   }
 } catch (err) {
   status.textContent = `${err.message} Try refreshing the page.`
