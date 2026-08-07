@@ -2,14 +2,10 @@
    a black screen, with the controls off the film to the right. */
 
 .record-body {
-  background: #000;
+  /* The film base itself, not black. */
+  background: #0a0908;
   min-height: 100svh;
   overflow: hidden;
-}
-
-.record-body .backdrop,
-.record-body .grain {
-  display: none;
 }
 
 .filmstage {
@@ -36,6 +32,25 @@
   overflow: hidden;
   background: #0a0908;
   transform: translateY(var(--drift, 0));
+}
+
+/* The cut edge of the film, where light gets into the base and the scan picks
+   it up as a cold line. Thin and dim, sitting hard against the strip edge. */
+.reel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    to right,
+    rgba(40, 58, 122, 0.55),
+    rgba(22, 30, 64, 0.28) 60%,
+    rgba(10, 9, 8, 0)
+  );
+  z-index: 5;
+  pointer-events: none;
 }
 
 .reel-perf {
