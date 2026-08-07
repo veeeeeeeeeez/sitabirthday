@@ -1,18 +1,27 @@
-/* Shared scrapbook look: warm paper, handwriting, things taped down slightly crooked. */
+/* Gallery: white liquid glass floating over Renaissance painting.
+   Glass needs something behind it to refract, which is what the artwork is for. */
 
 :root {
-  --paper: #f6efe3;
-  --paper-deep: #ece0cc;
-  --ink: #33291f;
-  --ink-soft: #6d5c48;
-  --accent: #c4553d;
-  --accent-soft: #e9a08a;
-  --tape: rgba(232, 214, 168, 0.75);
-  --card: #fffdf8;
-  --shadow: 0 10px 30px rgba(60, 42, 24, 0.16);
-  --radius: 4px;
-  --hand: 'Caveat', 'Bradley Hand', cursive;
-  --body: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ivory: #f7f5f1;
+  --ink: #16130f;
+  --ink-soft: #5d564c;
+  --ink-faint: #918878;
+  --gold: #a8874f;
+  --gold-soft: #c9b183;
+
+  /* Liquid glass */
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-line: rgba(255, 255, 255, 0.75);
+  --glass-blur: saturate(180%) blur(28px);
+  --glass-shadow: 0 2px 8px rgba(28, 22, 14, 0.04), 0 12px 40px rgba(28, 22, 14, 0.1),
+    0 32px 80px rgba(28, 22, 14, 0.07);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+
+  --display: 'Cormorant Garamond', 'Didot', 'Times New Roman', serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius: 22px;
 }
 
 * {
@@ -26,214 +35,206 @@ body {
 }
 
 body {
-  min-height: 100vh;
-  font-family: var(--body);
+  min-height: 100svh;
+  font-family: var(--sans);
   color: var(--ink);
-  background-color: var(--paper);
-  /* Faint fibers so the background reads as paper, not flat beige. */
-  background-image:
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.6), transparent 45%),
-    radial-gradient(circle at 85% 10%, rgba(233, 160, 138, 0.16), transparent 40%),
-    radial-gradient(circle at 70% 90%, rgba(196, 85, 61, 0.08), transparent 45%);
+  background: var(--ivory);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The painting sits far back, heavily blurred and bleached, so it reads as
+   colored light rather than a picture competing with the content. */
+.backdrop {
+  position: fixed;
+  inset: -10%;
+  z-index: -2;
+  background-image: var(--art, url('/img/venus.jpg'));
+  background-size: cover;
+  background-position: center;
+  filter: blur(34px) saturate(140%) brightness(1.05);
+  opacity: 0.85;
+  transform: scale(1.12);
+}
+
+/* Keeps the top of the page pale enough for dark text while letting the
+   painting's forms stay readable further down. */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% -5%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.3) 55%),
+    linear-gradient(180deg, rgba(247, 245, 241, 0.62), rgba(247, 245, 241, 0.34));
+}
+
+/* Faint plaster grain so the white doesn't read as flat screen-white. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
 }
 
 .wrap {
-  width: min(100% - 2.5rem, 46rem);
+  position: relative;
+  width: min(100% - 2rem, 34rem);
   margin-inline: auto;
-  padding-block: clamp(2rem, 6vw, 4rem);
+  padding-block: clamp(2rem, 7vh, 4rem);
 }
 
 .wrap--wide {
-  width: min(100% - 2.5rem, 74rem);
+  width: min(100% - 2rem, 76rem);
 }
 
-/* ------------------------------------------------------------------ type */
+/* --------------------------------------------------------------------- type */
 
 h1 {
-  font-family: var(--hand);
-  font-size: clamp(2.75rem, 9vw, 4.5rem);
-  line-height: 0.95;
-  margin: 0 0 0.4rem;
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: clamp(3rem, 11vw, 5.25rem);
+  line-height: 0.94;
+  letter-spacing: -0.015em;
+  margin: 0 0 1rem;
 }
 
-h1 .accent {
-  color: var(--accent);
-  display: block;
+h1 em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+/* Small-caps gallery placard label. */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 1.1rem;
 }
 
 .lede {
-  font-size: clamp(1rem, 2.4vw, 1.15rem);
+  font-family: var(--display);
+  font-size: clamp(1.15rem, 3.4vw, 1.4rem);
+  font-weight: 300;
+  line-height: 1.5;
   color: var(--ink-soft);
-  line-height: 1.55;
   margin: 0 0 2rem;
-  max-width: 34rem;
 }
 
-.eyebrow {
-  font-family: var(--hand);
-  font-size: 1.5rem;
-  color: var(--accent);
-  margin: 0 0 0.25rem;
+/* Hairline rule with a gold diamond, like a museum wall divider. */
+.rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1.75rem 0;
+  color: var(--gold-soft);
 }
 
-/* ------------------------------------------------------------------ card */
+.rule::before,
+.rule::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(168, 135, 79, 0.35), transparent);
+}
 
-.card {
+.rule span {
+  font-size: 0.5rem;
+  transform: rotate(45deg);
+  display: block;
+  width: 5px;
+  height: 5px;
+  background: var(--gold-soft);
+}
+
+/* -------------------------------------------------------------------- glass */
+
+.glass {
   position: relative;
-  background: var(--card);
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.68) 100%
+  );
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: clamp(1.5rem, 4vw, 2.25rem);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  overflow: hidden;
 }
 
-/* A strip of washi tape holding the card to the page. */
-.card::before {
+/* Specular sweep across the top edge -- the thing that sells it as glass. */
+.glass::before {
   content: '';
   position: absolute;
-  top: -0.75rem;
-  left: 50%;
-  width: 7.5rem;
-  height: 1.6rem;
-  transform: translateX(-50%) rotate(-1.6deg);
-  background: var(--tape);
-  box-shadow: 0 1px 3px rgba(60, 42, 24, 0.14);
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 45%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.85), transparent 70%);
+  pointer-events: none;
 }
 
-/* ----------------------------------------------------------------- forms */
+/* -------------------------------------------------------------------- forms */
 
 label {
   display: block;
-  font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.4rem;
-}
-
-.hint {
-  font-weight: 400;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.6rem;
 }
 
 .field {
+  position: relative;
   margin-bottom: 1.5rem;
 }
 
 input[type='text'],
 textarea {
   width: 100%;
-  font: inherit;
-  font-size: 1rem;
+  font-family: var(--display);
+  font-size: 1.2rem;
+  font-weight: 400;
   color: var(--ink);
-  padding: 0.75rem 0.9rem;
-  background: #fffefb;
-  border: 1.5px solid var(--paper-deep);
-  border-radius: var(--radius);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  padding: 0.7rem 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(22, 19, 15, 0.14);
+  border-radius: 0;
+  transition: border-color 0.25s ease;
 }
 
 textarea {
   resize: vertical;
-  min-height: 5.5rem;
-  line-height: 1.5;
+  min-height: 3.5rem;
+  line-height: 1.45;
+}
+
+input[type='text']::placeholder,
+textarea::placeholder {
+  color: var(--ink-faint);
+  opacity: 0.55;
 }
 
 input[type='text']:focus,
-textarea:focus,
-.filedrop:focus-visible {
+textarea:focus {
   outline: none;
-  border-color: var(--accent-soft);
-  box-shadow: 0 0 0 3px rgba(233, 160, 138, 0.28);
+  border-bottom-color: var(--gold);
 }
 
-/* The video picker, styled as a dashed drop zone. */
-.filedrop {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  text-align: center;
-  padding: 2rem 1rem;
-  border: 2px dashed var(--paper-deep);
-  border-radius: 6px;
-  background: #fffefb;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.filedrop:hover,
-.filedrop.is-dragging {
-  border-color: var(--accent-soft);
-  background: #fffaf4;
-}
-
-.filedrop.has-file {
-  border-style: solid;
-  border-color: var(--accent-soft);
-  background: #fff7f2;
-}
-
-.filedrop input {
-  display: none;
-}
-
-.filedrop .icon {
-  font-size: 1.75rem;
-  line-height: 1;
-}
-
-.filedrop .primary {
-  font-weight: 600;
-}
-
-.filedrop .secondary {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-
-/* Thumbnail preview once a video is chosen. */
-.preview {
-  display: none;
-  gap: 0.9rem;
-  align-items: center;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #fff7f2;
-  border-radius: 6px;
-}
-
-.preview.is-visible {
-  display: flex;
-}
-
-.preview img,
-.preview .thumb-fallback {
-  width: 5rem;
-  height: 5rem;
-  border-radius: 4px;
-  object-fit: cover;
-  background: var(--paper-deep);
-  flex-shrink: 0;
-}
-
-.preview .meta {
-  min-width: 0;
-}
-
-.preview .filename {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.preview .filesize {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-
-/* --------------------------------------------------------------- buttons */
+/* ------------------------------------------------------------------ buttons */
 
 button {
   font: inherit;
@@ -244,39 +245,68 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   width: 100%;
-  padding: 0.95rem 1.5rem;
-  font-size: 1.05rem;
-  font-weight: 700;
+  padding: 1.05rem 1.5rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   color: #fff;
-  background: var(--accent);
-  border: none;
-  border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(196, 85, 61, 0.32);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 100px;
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  box-shadow: 0 6px 20px rgba(22, 19, 15, 0.18);
 }
 
 .btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 9px 24px rgba(196, 85, 61, 0.38);
+  box-shadow: 0 10px 28px rgba(22, 19, 15, 0.24);
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.4;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-/* -------------------------------------------------------------- progress */
+.btn--ghost {
+  color: var(--ink);
+  background: var(--glass-strong);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.btn--quiet {
+  width: auto;
+  padding: 0.6rem 1.15rem;
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border-color: rgba(22, 19, 15, 0.16);
+  box-shadow: none;
+}
+
+.btn--quiet:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
+/* ----------------------------------------------------------------- progress */
 
 .progress {
   display: none;
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 .progress.is-visible {
@@ -284,36 +314,37 @@ button {
 }
 
 .progress .track {
-  height: 0.6rem;
-  background: var(--paper-deep);
-  border-radius: 999px;
+  height: 2px;
+  background: rgba(22, 19, 15, 0.1);
   overflow: hidden;
 }
 
 .progress .bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
-  border-radius: 999px;
-  transition: width 0.25s ease;
+  background: var(--gold);
+  transition: width 0.3s ease;
 }
 
 .progress .label {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
+  margin-top: 0.7rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
   text-align: center;
 }
 
 .error {
   display: none;
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  background: #fdeae5;
-  color: #96361f;
-  font-size: 0.92rem;
-  border: 1px solid #f3c4b7;
+  margin-top: 1.1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
+  background: rgba(160, 44, 32, 0.07);
+  border: 1px solid rgba(160, 44, 32, 0.18);
+  color: #8c2b1e;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .error.is-visible {
@@ -323,13 +354,26 @@ button {
 .footnote {
   margin-top: 1.75rem;
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Safari <18 and Firefox without backdrop-filter: lean opaque so text stays legible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .btn--ghost {
+    background: rgba(255, 255, 255, 0.93);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

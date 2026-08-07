@@ -34,6 +34,22 @@ if (missing.length) {
   process.exit(1)
 }
 
+// R2 rejects malformed credentials with a 403 that carries no CORS headers, so the
+// browser reports it as a bare "network error" during upload. Say so up front
+// instead. A common mix-up is pasting Cloudflare's "Token value" into both fields
+// rather than the separate Access Key ID and Secret Access Key.
+if (R2_ACCESS_KEY_ID.length !== 32 || R2_SECRET_ACCESS_KEY.length !== 64) {
+  console.warn(
+    `WARNING: R2 credentials look wrong (access key id is ${R2_ACCESS_KEY_ID.length} chars, ` +
+      `expected 32; secret is ${R2_SECRET_ACCESS_KEY.length} chars, expected 64). ` +
+      `Uploads will fail. Use the Access Key ID and Secret Access Key from the R2 API ` +
+      `token screen, not the "Token value".`,
+  )
+}
+if (R2_ACCESS_KEY_ID === R2_SECRET_ACCESS_KEY) {
+  console.warn('WARNING: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are identical.')
+}
+
 const maxUploadBytes = Number(MAX_UPLOAD_MB) * 1024 * 1024
 
 const s3 = new S3Client({
@@ -59,6 +75,10 @@ const VIDEO_TYPES = new Map([
 ])
 
 const KNOWN_EXTENSIONS = [...new Set(VIDEO_TYPES.values())]
+
+// MediaRecorder reports types like "video/webm;codecs=vp8,opus", so match on the
+// bare type and drop the codec parameters.
+const baseMimeType = (value) => String(value ?? '').split(';')[0].trim().toLowerCase()
 
 const PLAYBACK_URL_TTL = 60 * 60 * 6 // 6h: long enough for one sitting on the wall
 const UPLOAD_URL_TTL = 60 * 60 // 1h: generous for a slow phone upload
@@ -142,7 +162,8 @@ app.post('/api/uploads', async (req, res) => {
     }
 
     const { contentType, size } = req.body ?? {}
-    const ext = VIDEO_TYPES.get(contentType)
+    const type = baseMimeType(contentType)
+    const ext = VIDEO_TYPES.get(type)
     if (!ext) {
       return res.status(400).json({ error: "That file type isn't supported. Try an MP4 or MOV." })
     }
@@ -162,7 +183,7 @@ app.post('/api/uploads', async (req, res) => {
     const [videoUrl, posterUrl] = await Promise.all([
       getSignedUrl(
         s3,
-        new PutObjectCommand({ Bucket: R2_BUCKET, Key: videoKey, ContentType: contentType }),
+        new PutObjectCommand({ Bucket: R2_BUCKET, Key: videoKey, ContentType: type }),
         { expiresIn: UPLOAD_URL_TTL },
       ),
       getSignedUrl(
@@ -172,7 +193,9 @@ app.post('/api/uploads', async (req, res) => {
       ),
     ])
 
-    res.json({ id, videoKey, posterKey, videoUrl, posterUrl })
+    // Echo the normalized type back: the PUT is signed over it, so the browser has
+    // to send this exact header rather than the raw MediaRecorder mime string.
+    res.json({ id, videoKey, posterKey, videoUrl, posterUrl, contentType: type })
   } catch (err) {
     console.error('presign failed', err)
     res.status(500).json({ error: 'Could not start the upload. Please try again.' })

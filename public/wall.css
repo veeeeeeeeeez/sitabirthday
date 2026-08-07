@@ -1,151 +1,175 @@
-/* The scrapbook board: polaroid-ish cards pinned at slightly wrong angles. */
-
-.wall-body {
-  padding-bottom: 3rem;
-}
+/* The wall as a hung exhibition: framed works with engraved museum labels. */
 
 .wall-header {
   text-align: center;
-  padding: clamp(2.5rem, 8vw, 4.5rem) 1.25rem 1rem;
+  padding: clamp(3rem, 10vh, 6rem) 1.25rem 0;
 }
 
 .wall-header h1 {
-  font-size: clamp(3.5rem, 14vw, 7rem);
+  font-size: clamp(3.5rem, 13vw, 8rem);
+  margin-bottom: 0.5rem;
 }
 
-.wall-lede {
+.wall-header .lede {
+  max-width: 30rem;
   margin-inline: auto;
 }
 
 .board-status {
   grid-column: 1 / -1;
   text-align: center;
+  font-family: var(--display);
+  font-size: 1.2rem;
   color: var(--ink-soft);
-  font-size: 1.05rem;
-  padding: 3rem 1rem;
+  padding: 4rem 1rem;
 }
 
-/* --------------------------------------------------------------- the board */
+/* ------------------------------------------------------------------- board */
 
 .board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: clamp(1.75rem, 4vw, 2.75rem);
-  padding-block: 1rem 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: clamp(2rem, 4vw, 3.25rem) clamp(1.25rem, 3vw, 2.5rem);
+  padding-block: 2rem 3rem;
+  align-items: start;
 }
 
-.note {
-  --tilt: 0deg;
-  position: relative;
+.work {
   display: block;
   width: 100%;
-  padding: 0.75rem 0.75rem 1rem;
-  background: var(--card);
+  padding: 0;
   border: none;
-  border-radius: 3px;
-  box-shadow: var(--shadow);
-  text-align: left;
-  transform: rotate(var(--tilt));
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.22s ease;
-  animation: drop-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+  background: none;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  animation: settle 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
 }
 
-.note:hover,
-.note:focus-visible {
-  transform: rotate(0deg) translateY(-6px) scale(1.03);
-  box-shadow: 0 18px 40px rgba(60, 42, 24, 0.24);
-  outline: none;
-  z-index: 2;
-}
-
-/* Tape strip across the top corner of each card. */
-.note::before {
-  content: '';
-  position: absolute;
-  top: -0.65rem;
-  left: 50%;
-  width: 5.5rem;
-  height: 1.35rem;
-  transform: translateX(-50%) rotate(calc(var(--tilt) * -1.5));
-  background: var(--tape);
-  box-shadow: 0 1px 3px rgba(60, 42, 24, 0.12);
-}
-
-@keyframes drop-in {
+@keyframes settle {
   from {
     opacity: 0;
-    transform: rotate(var(--tilt)) translateY(1.5rem) scale(0.96);
+    transform: translateY(18px);
   }
 }
 
-.note-photo {
+/* The frame: white matte board with a thin gilt inner line. */
+.work-frame {
   position: relative;
-  aspect-ratio: 4 / 5;
-  width: 100%;
-  border-radius: 2px;
-  overflow: hidden;
-  background: var(--paper-deep);
+  padding: 0.55rem;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.66));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.3s ease;
 }
 
-.note-photo img {
+.work:hover .work-frame,
+.work:focus-visible .work-frame {
+  transform: translateY(-6px);
+  box-shadow: 0 4px 12px rgba(28, 22, 14, 0.06), 0 22px 60px rgba(28, 22, 14, 0.16);
+}
+
+.work:focus-visible {
+  outline: none;
+}
+
+.work:focus-visible .work-frame {
+  border-color: var(--gold);
+}
+
+.work-plate {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e9e5dd;
+  box-shadow: inset 0 0 0 1px rgba(168, 135, 79, 0.32);
+}
+
+.work-plate img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-/* When we couldn't grab a still, show initials on a warm gradient instead. */
-.note-photo .initials {
+/* No poster frame: a soft plaster panel with the initial set in the serif. */
+.work-plate .monogram {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  font-family: var(--hand);
-  font-size: 3.5rem;
-  color: #fff;
-  background: linear-gradient(140deg, var(--accent-soft), var(--accent));
+  font-family: var(--display);
+  font-size: 3.25rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  color: rgba(22, 19, 15, 0.4);
+  background:
+    radial-gradient(ellipse at 30% 25%, rgba(255, 255, 255, 0.95), transparent 60%),
+    linear-gradient(150deg, #efece5, #e2ddd2);
 }
 
-.note-play {
+.work-plate .play {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(to top, rgba(35, 24, 14, 0.45), rgba(35, 24, 14, 0) 55%);
+  background: linear-gradient(180deg, rgba(16, 14, 11, 0) 45%, rgba(16, 14, 11, 0.32));
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.28s ease;
 }
 
-.note:hover .note-play,
-.note:focus-visible .note-play {
+.work:hover .play,
+.work:focus-visible .play {
   opacity: 1;
 }
 
-.note-play span {
+.work-plate .play span {
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2.9rem;
+  height: 2.9rem;
+  padding-left: 0.18rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--accent);
-  font-size: 1.1rem;
-  padding-left: 0.2rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ink);
+  font-size: 0.85rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
 }
 
-.note-name {
-  font-family: var(--hand);
-  font-size: 1.7rem;
-  line-height: 1.1;
-  margin: 0.7rem 0 0;
+/* The engraved label beneath each work. */
+.work-label {
+  padding: 0.85rem 0.25rem 0;
+}
+
+.work-name {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
 
-.note-message {
-  margin: 0.2rem 0 0;
-  font-size: 0.86rem;
+.work-meta {
+  margin: 0.3rem 0 0;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.work-note {
+  margin: 0.45rem 0 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 0.94rem;
   line-height: 1.4;
   color: var(--ink-soft);
   display: -webkit-box;
@@ -162,82 +186,100 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: clamp(1rem, 4vw, 2.5rem);
-  background: rgba(28, 19, 11, 0.9);
-  backdrop-filter: blur(6px);
-  animation: fade-in 0.2s ease;
+  padding: clamp(0.75rem, 4vw, 2.5rem);
+  background: rgba(233, 229, 221, 0.55);
+  -webkit-backdrop-filter: saturate(160%) blur(30px);
+  backdrop-filter: saturate(160%) blur(30px);
+  animation: fade 0.28s ease;
 }
 
 .lightbox[hidden] {
   display: none;
 }
 
-@keyframes fade-in {
+@keyframes fade {
   from {
     opacity: 0;
   }
 }
 
 .lightbox-inner {
-  width: min(100%, 46rem);
+  width: min(100%, 42rem);
   max-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
+  animation: rise-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
 }
 
 .lightbox-stage {
-  background: #000;
-  border-radius: 8px;
+  background: #0d0c0a;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 30px 80px rgba(28, 22, 14, 0.3);
 }
 
 .lightbox-stage video {
   display: block;
   width: 100%;
-  max-height: min(68vh, 40rem);
-  background: #000;
+  max-height: min(64svh, 38rem);
+  background: #0d0c0a;
 }
 
-/* We focus the video on open so keyboard controls work; the browser's default
-   blue ring is jarring here, so only show a warm one for real keyboard nav. */
 .lightbox-stage video:focus {
   outline: none;
 }
 
 .lightbox-stage video:focus-visible {
-  outline: 2px solid var(--accent-soft);
+  outline: 2px solid var(--gold);
   outline-offset: -2px;
 }
 
+/* Museum placard under the film. */
 .lightbox-caption {
   text-align: center;
-  color: #f6efe3;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
 }
 
 .lightbox-name {
-  font-family: var(--hand);
-  font-size: 2.2rem;
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 500;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .lightbox-message {
-  margin: 0.35rem auto 0;
-  max-width: 34rem;
-  font-size: 0.98rem;
+  margin: 0.4rem auto 0;
+  max-width: 30rem;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.05rem;
   line-height: 1.5;
-  color: rgba(246, 239, 227, 0.82);
+  color: var(--ink-soft);
   overflow-wrap: anywhere;
 }
 
 .lightbox-index {
-  margin: 0.75rem 0 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
+  margin: 0.7rem 0 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(246, 239, 227, 0.5);
+  color: var(--ink-faint);
 }
 
 .lightbox-close,
@@ -245,36 +287,44 @@
   position: absolute;
   display: grid;
   place-items: center;
-  border: none;
+  border: 1px solid var(--glass-line);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  transition: background 0.15s ease;
+  background: rgba(255, 255, 255, 0.75);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  color: var(--ink);
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .lightbox-close:hover,
-.lightbox-nav:hover {
-  background: rgba(255, 255, 255, 0.26);
+.lightbox-nav:hover:not([disabled]) {
+  background: #fff;
+  transform: scale(1.05);
 }
 
 .lightbox-close {
   top: 1rem;
   right: 1rem;
-  width: 2.75rem;
-  height: 2.75rem;
-  font-size: 1.9rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1.35rem;
   line-height: 1;
-  padding-bottom: 0.2rem;
+  padding-bottom: 0.15rem;
 }
 
 .lightbox-nav {
   top: 50%;
   transform: translateY(-50%);
-  width: 3rem;
-  height: 3rem;
-  font-size: 2rem;
+  width: 2.9rem;
+  height: 2.9rem;
+  font-size: 1.5rem;
   line-height: 1;
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.2rem;
+}
+
+.lightbox-nav:hover:not([disabled]) {
+  transform: translateY(-50%) scale(1.05);
 }
 
 .lightbox-prev {
@@ -286,65 +336,46 @@
 }
 
 .lightbox-nav[disabled] {
-  opacity: 0.25;
+  opacity: 0.3;
   cursor: default;
 }
 
-/* On phones the side arrows would sit on top of the video, so tuck them down. */
-@media (max-width: 40rem) {
+/* Below ~46rem the side arrows would sit on the film, so drop them to the corners. */
+@media (max-width: 46rem) {
   .lightbox-nav {
     top: auto;
-    bottom: 1rem;
+    bottom: 1.15rem;
     transform: none;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+
+  .lightbox-nav:hover:not([disabled]) {
+    transform: scale(1.05);
   }
 
   .lightbox-prev {
-    left: 1.5rem;
+    left: 1.15rem;
   }
 
   .lightbox-next {
-    right: 1.5rem;
+    right: 1.15rem;
   }
 
-  .lightbox-index {
-    margin-bottom: 3.5rem;
+  .lightbox-inner {
+    padding-bottom: 3.5rem;
   }
 }
 
 .wall-footer {
   text-align: center;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  padding: 2rem 1.25rem 0;
+  padding: 1rem 1.25rem 3rem;
 }
 
 .wall-footer p {
   margin: 0;
-}
-
-/* ---------------------------------------------------------------- confetti */
-
-.confetti {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 60;
-  overflow: hidden;
-}
-
-.confetti i {
-  position: absolute;
-  top: -3vh;
-  width: 0.55rem;
-  height: 0.9rem;
-  border-radius: 1px;
-  animation: fall linear forwards;
-}
-
-@keyframes fall {
-  to {
-    transform: translateY(106vh) rotate(720deg);
-  }
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink-faint);
 }

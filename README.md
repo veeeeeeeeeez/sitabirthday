@@ -3,9 +3,12 @@
 Friends upload a short video wishing her happy birthday. She gets a scrapbook wall
 of taped-down cards to tap through on the day.
 
-- **`/`** — the page you send to friends. Name, optional note, one video. No login.
-- **`/wall/<VIEW_KEY>`** — the page you send to her. Cards, tap to play, arrow/swipe
-  between messages, autoplays into the next one.
+- **`/`** — the page you send to friends. They record in the browser: one tap starts
+  the camera, another starts and stops recording, then they name it and send. No app,
+  no login. Uploading an existing file is offered as a fallback.
+- **`/wall/<VIEW_KEY>`** — the page you send to her, hung as a private exhibition.
+  Tap a work to play it; arrow keys and swipe move between films, and each one rolls
+  into the next.
 
 Videos go **straight from the friend's browser into Cloudflare R2** via a presigned
 URL, so the server never handles the bytes and nothing is lost on redeploy. There's
@@ -129,12 +132,20 @@ other `/wall/...` path 404s. Leave `VIEW_KEY` blank to make `/wall` fully open.
 ## Running locally
 
 ```bash
-npm install
-cp .env.example .env    # fill in your R2 values
-node --env-file=.env server.js
+./scripts/dev.sh
 ```
 
-Then http://localhost:3000 and http://localhost:3000/wall/surprise.
+Installs dependencies, creates `.env` from `.env.example` on first run, frees the
+port if an old server is still holding it, and starts on http://localhost:3000. Point
+Conductor's run script at this file.
+
+The R2 CORS policy already allows `http://localhost:3000`, so uploads work locally.
+Note that **browsers only allow camera access on HTTPS or `localhost`** — reaching the
+dev server by LAN IP from a phone will not offer the recorder, only file upload.
+
+The server prints a warning at startup if the R2 key lengths look wrong (they should
+be 32 and 64 characters), since R2 otherwise fails uploads in a way that surfaces in
+the browser only as a vague "network error".
 
 ## Removing a bad submission
 

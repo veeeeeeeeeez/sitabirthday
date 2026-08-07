@@ -3,41 +3,55 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Your birthday scrapbook</title>
+    <title>The exhibition</title>
     <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f7f5f1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/wall.css" />
+    <style>
+      .backdrop {
+        --art: url('/img/primavera.jpg');
+      }
+    </style>
   </head>
-  <body class="wall-body">
+  <body>
+    <div class="backdrop"></div>
+    <div class="grain"></div>
+
     <header class="wall-header">
-      <p class="eyebrow">Happy birthday</p>
-      <h1><span class="accent" data-honoree>Sita</span></h1>
-      <p class="lede wall-lede">
-        <span id="count">Your friends</span> left you something. Tap a card to play it.
-      </p>
+      <p class="eyebrow" id="eyebrow">A private exhibition</p>
+      <h1><em data-honoree>Sita</em></h1>
+      <p class="lede" id="subtitle">Assembled by the people who love you.</p>
+      <div class="rule"><span></span></div>
     </header>
 
     <main class="wrap wrap--wide">
       <div class="board" id="board" aria-live="polite">
-        <p class="board-status" id="status">Opening the scrapbook&hellip;</p>
+        <p class="board-status" id="status">Unlocking the gallery&hellip;</p>
       </div>
     </main>
 
     <footer class="wall-footer">
-      <p>Made with love by everyone who misses you. 💛</p>
+      <p>Happy birthday.</p>
     </footer>
 
-    <!-- Lightbox -->
-    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Video message" hidden>
+    <div
+      class="lightbox"
+      id="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Video message"
+      hidden
+    >
       <button class="lightbox-close" id="lbClose" aria-label="Close">&times;</button>
-      <button class="lightbox-nav lightbox-prev" id="lbPrev" aria-label="Previous message">&#8249;</button>
-      <button class="lightbox-nav lightbox-next" id="lbNext" aria-label="Next message">&#8250;</button>
+      <button class="lightbox-nav lightbox-prev" id="lbPrev" aria-label="Previous">&#8249;</button>
+      <button class="lightbox-nav lightbox-next" id="lbNext" aria-label="Next">&#8250;</button>
 
       <div class="lightbox-inner">
         <div class="lightbox-stage">

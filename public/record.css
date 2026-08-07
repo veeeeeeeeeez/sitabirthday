@@ -1,0 +1,304 @@
+/* The camera stage: a tall glass viewport with a shutter ring, phone-first. */
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 60svh;
+  margin: 0 auto;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #0d0c0a;
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+@media (min-width: 34rem) {
+  .stage {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+.stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #0d0c0a;
+}
+
+/* Selfie preview is mirrored for the person recording; the saved file is not,
+   which is what every phone camera does. */
+.stage video.is-mirrored {
+  transform: scaleX(-1);
+}
+
+.stage video[hidden] {
+  display: none;
+}
+
+/* Idle state before camera permission is granted. */
+.stage-idle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 0.9rem;
+  justify-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background-image: url('/img/marble.jpg');
+  background-size: cover;
+  background-position: center 28%;
+}
+
+.stage-idle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(247, 245, 241, 0.55), rgba(247, 245, 241, 0.86));
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.stage-idle > * {
+  position: relative;
+}
+
+.stage-idle p {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+  max-width: 20rem;
+  line-height: 1.45;
+}
+
+/* Recording timer, top-left of the stage. */
+.timer {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.7rem 0.38rem 0.6rem;
+  border-radius: 100px;
+  background: rgba(16, 14, 11, 0.5);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.timer.is-visible {
+  display: flex;
+}
+
+.timer i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e5484d;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Flip-camera button, top-right of the stage. */
+.flip {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(16, 14, 11, 0.4);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.flip.is-visible {
+  display: flex;
+}
+
+/* --------------------------------------------------------------- shutter */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  min-height: 4.75rem;
+}
+
+.shutter {
+  position: relative;
+  width: 4.75rem;
+  height: 4.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Outer ring stays put; the inner shape morphs circle -> square while recording,
+   which is the visual language people already know from phone cameras. */
+.shutter .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(22, 19, 15, 0.22);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  transition: border-color 0.25s ease;
+}
+
+.shutter .core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3.5rem;
+  height: 3.5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #e5484d;
+  transition: width 0.28s cubic-bezier(0.3, 0.9, 0.3, 1),
+    height 0.28s cubic-bezier(0.3, 0.9, 0.3, 1), border-radius 0.28s ease;
+}
+
+.shutter[data-state='recording'] .ring {
+  border-color: #e5484d;
+}
+
+.shutter[data-state='recording'] .core {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 6px;
+}
+
+.shutter:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Countdown ring drawn over the shutter as the time limit approaches. */
+.shutter svg {
+  position: absolute;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.shutter svg circle {
+  fill: none;
+  stroke: #e5484d;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.shutter[data-state='recording'] svg circle {
+  opacity: 1;
+}
+
+.controls .side {
+  width: 5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.controls .side:empty {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------ review state */
+
+.review-actions {
+  display: none;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.review-actions.is-visible {
+  display: flex;
+}
+
+.review-actions .btn {
+  flex: 1;
+}
+
+.hint-line {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Upload-a-file escape hatch, for desktops and denied camera permission. */
+.filepick {
+  margin-top: 0.4rem;
+  text-align: center;
+}
+
+.filepick input {
+  display: none;
+}
+
+.filepick label {
+  display: inline-block;
+  margin: 0;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.filepick label:hover {
+  color: var(--ink);
+}
+
+/* The details form only appears once there's something to send. */
+.details {
+  display: none;
+  margin-top: 1.75rem;
+}
+
+.details.is-visible {
+  display: block;
+  animation: rise 0.45s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}

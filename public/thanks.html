@@ -3,39 +3,50 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Thank you!</title>
+    <title>Thank you</title>
     <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f7f5f1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/wall.css" />
     <style>
+      .backdrop {
+        --art: url('/img/primavera.jpg');
+      }
       .thanks {
         text-align: center;
-        padding-top: clamp(3rem, 12vh, 7rem);
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .thanks .glass {
+        padding-block: clamp(2.5rem, 8vh, 4rem);
       }
       .thanks .btn {
         width: auto;
-        margin-top: 1.5rem;
-        background: transparent;
-        color: var(--accent);
-        box-shadow: none;
-        border: 2px solid var(--accent-soft);
+        margin-top: 2rem;
       }
     </style>
   </head>
   <body>
+    <div class="backdrop"></div>
+    <div class="grain"></div>
+
     <main class="wrap thanks">
-      <p class="eyebrow">Got it</p>
-      <h1>Thank you<span class="accent" id="who"></span></h1>
-      <p class="lede" style="margin-inline: auto">
-        Your message is safely in the scrapbook. <span data-honoree>She</span> is going to love it.
-      </p>
-      <a class="btn" href="/">Send another one</a>
+      <div class="glass">
+        <p class="eyebrow">Acquired for the collection</p>
+        <h1>Thank you<em id="who"></em></h1>
+        <div class="rule"><span></span></div>
+        <p class="lede" style="margin-bottom: 0">
+          Your film is hung and waiting. <span data-honoree>She</span> is going to love it.
+        </p>
+        <a class="btn btn--ghost" href="/">Record another</a>
+      </div>
     </main>
 
     <script type="module">
@@ -48,24 +59,6 @@
           for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = honoree
         })
         .catch(() => {})
-
-      // Same confetti as the wall, minus the module wiring.
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const colors = ['#c4553d', '#e9a08a', '#e8d6a8', '#8ba888', '#f0c05a']
-        const layer = document.createElement('div')
-        layer.className = 'confetti'
-        layer.setAttribute('aria-hidden', 'true')
-        for (let i = 0; i < 60; i++) {
-          const bit = document.createElement('i')
-          bit.style.left = `${Math.random() * 100}vw`
-          bit.style.background = colors[i % colors.length]
-          bit.style.animationDuration = `${2.6 + Math.random() * 2.4}s`
-          bit.style.animationDelay = `${Math.random() * 1.2}s`
-          layer.append(bit)
-        }
-        document.body.append(layer)
-        setTimeout(() => layer.remove(), 7000)
-      }
     </script>
   </body>
 </html>

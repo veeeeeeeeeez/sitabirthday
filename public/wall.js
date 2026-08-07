@@ -14,79 +14,83 @@ let submissions = []
 let current = -1
 let lastFocused = null
 
-/* ------------------------------------------------------------------ cards */
+/* ------------------------------------------------------------------ works */
 
-// Deterministic per-id tilt: cards keep the same angle across reloads instead of
-// jittering every time the page renders.
-function tiltFor(id) {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0
-  return (Math.abs(hash) % 700) / 100 - 3.5 // -3.5deg .. +3.5deg
+// Skip joining words so "Dev & Nisha" reads D and "The Tuesday Run Club" reads T.
+const monogramOf = (name) => name.match(/\p{L}/u)?.[0]?.toUpperCase() ?? '?'
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+const numeral = (n) => {
+  if (n <= 10) return ROMAN[n - 1]
+  const tens = Math.floor(n / 10)
+  return (tens === 1 ? 'X' : tens === 2 ? 'XX' : tens === 3 ? 'XXX' : `${tens}0`) +
+    (n % 10 ? ROMAN[(n % 10) - 1] : '')
 }
 
-// Skip joining words so "Dev & Nisha" reads DN and "The Tuesday Run Club" reads TR.
-const initialsOf = (name) =>
-  name
-    .split(/\s+/)
-    .map((word) => word.match(/\p{L}/u)?.[0] ?? '')
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '?'
+function makeMonogram(name) {
+  const el = document.createElement('div')
+  el.className = 'monogram'
+  el.textContent = monogramOf(name)
+  return el
+}
 
-function buildCard(item, index) {
-  const card = document.createElement('button')
-  card.type = 'button'
-  card.className = 'note'
-  card.style.setProperty('--tilt', `${tiltFor(item.id)}deg`)
-  card.style.animationDelay = `${Math.min(index * 55, 1200)}ms`
-  card.setAttribute('aria-label', `Play the message from ${item.name}`)
+function buildWork(item, index) {
+  const work = document.createElement('button')
+  work.type = 'button'
+  work.className = 'work'
+  work.style.animationDelay = `${Math.min(index * 60, 1400)}ms`
+  work.setAttribute('aria-label', `Play the message from ${item.name}`)
 
-  const photo = document.createElement('div')
-  photo.className = 'note-photo'
+  const frame = document.createElement('div')
+  frame.className = 'work-frame'
+
+  const plate = document.createElement('div')
+  plate.className = 'work-plate'
 
   if (item.posterUrl) {
     const img = document.createElement('img')
     img.src = item.posterUrl
     img.alt = ''
     img.loading = 'lazy'
-    // A poster that 404s (expired or never uploaded) falls back to initials.
+    // An expired or missing poster falls back to the monogram panel.
     img.addEventListener('error', () => {
       img.remove()
-      photo.prepend(makeInitials(item.name))
+      plate.prepend(makeMonogram(item.name))
     })
-    photo.append(img)
+    plate.append(img)
   } else {
-    photo.append(makeInitials(item.name))
+    plate.append(makeMonogram(item.name))
   }
 
   const play = document.createElement('div')
-  play.className = 'note-play'
+  play.className = 'play'
   play.innerHTML = '<span>&#9654;</span>'
-  photo.append(play)
+  plate.append(play)
+  frame.append(plate)
+
+  const label = document.createElement('div')
+  label.className = 'work-label'
 
   const name = document.createElement('p')
-  name.className = 'note-name'
+  name.className = 'work-name'
   name.textContent = item.name
 
-  card.append(photo, name)
+  const meta = document.createElement('p')
+  meta.className = 'work-meta'
+  meta.textContent = `No. ${numeral(index + 1)}`
+
+  label.append(name, meta)
 
   if (item.message) {
-    const msg = document.createElement('p')
-    msg.className = 'note-message'
-    msg.textContent = item.message
-    card.append(msg)
+    const note = document.createElement('p')
+    note.className = 'work-note'
+    note.textContent = item.message
+    label.append(note)
   }
 
-  card.addEventListener('click', () => open(index))
-  return card
-}
-
-function makeInitials(name) {
-  const el = document.createElement('div')
-  el.className = 'initials'
-  el.textContent = initialsOf(name)
-  return el
+  work.append(frame, label)
+  work.addEventListener('click', () => open(index))
+  return work
 }
 
 /* -------------------------------------------------------------- lightbox */
@@ -96,26 +100,26 @@ function open(index) {
   current = index
   const item = submissions[index]
 
-  lastFocused = document.activeElement
+  if (lightbox.hidden) lastFocused = document.activeElement
   lbVideo.src = item.videoUrl
   lbName.textContent = item.name
   lbMessage.textContent = item.message || ''
   lbMessage.hidden = !item.message
-  lbIndex.textContent = `${index + 1} of ${submissions.length}`
+  lbIndex.textContent = `No. ${numeral(index + 1)} of ${submissions.length}`
   lbPrev.disabled = index === 0
   lbNext.disabled = index === submissions.length - 1
 
   lightbox.hidden = false
   document.body.style.overflow = 'hidden'
   lbVideo.play().catch(() => {}) // autoplay may be blocked; controls still work
-  lbVideo.focus()
+  lbVideo.focus({ preventScroll: true })
 }
 
 function close() {
   lightbox.hidden = true
   lbVideo.pause()
   lbVideo.removeAttribute('src')
-  lbVideo.load() // stop the download for a video she skipped past
+  lbVideo.load() // stop downloading a film she skipped past
   document.body.style.overflow = ''
   current = -1
   lastFocused?.focus()
@@ -127,12 +131,11 @@ $('lbClose').addEventListener('click', close)
 lbPrev.addEventListener('click', () => step(-1))
 lbNext.addEventListener('click', () => step(1))
 
-// Click the backdrop (but not the video) to dismiss.
 lightbox.addEventListener('click', (e) => {
   if (e.target === lightbox) close()
 })
 
-// Roll straight into the next message, like a reel.
+// Roll into the next film, like a reel.
 lbVideo.addEventListener('ended', () => {
   if (current < submissions.length - 1) step(1)
 })
@@ -144,7 +147,6 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight') step(1)
 })
 
-// Swipe between messages on a phone.
 let touchStartX = null
 lightbox.addEventListener('touchstart', (e) => (touchStartX = e.changedTouches[0].clientX), {
   passive: true,
@@ -160,51 +162,28 @@ lightbox.addEventListener(
   { passive: true },
 )
 
-/* -------------------------------------------------------------- confetti */
-
-function confetti() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const colors = ['#c4553d', '#e9a08a', '#e8d6a8', '#8ba888', '#f0c05a']
-  const layer = document.createElement('div')
-  layer.className = 'confetti'
-  layer.setAttribute('aria-hidden', 'true')
-
-  for (let i = 0; i < 70; i++) {
-    const bit = document.createElement('i')
-    bit.style.left = `${Math.random() * 100}vw`
-    bit.style.background = colors[i % colors.length]
-    bit.style.animationDuration = `${2.6 + Math.random() * 2.4}s`
-    bit.style.animationDelay = `${Math.random() * 1.6}s`
-    layer.append(bit)
-  }
-
-  document.body.append(layer)
-  setTimeout(() => layer.remove(), 7000)
-}
-
 /* ------------------------------------------------------------------ load */
 
 try {
   const res = await fetch('/api/submissions')
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Could not load the scrapbook.')
+  if (!res.ok) throw new Error(data.error || 'Could not load the exhibition.')
 
   submissions = data.submissions
   for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = data.honoree
-  document.title = `${data.honoree}'s birthday scrapbook`
+  document.title = `${data.honoree} — a private exhibition`
 
   status.remove()
 
   if (!submissions.length) {
     board.innerHTML =
-      '<p class="board-status">The scrapbook is still empty — check back once friends have sent their messages.</p>'
+      '<p class="board-status">The walls are still bare. Check back once the first films arrive.</p>'
   } else {
-    const count = submissions.length
-    $('count').textContent = `${count} ${count === 1 ? 'friend' : 'friends'}`
+    const n = submissions.length
+    $('subtitle').textContent = `${n} ${n === 1 ? 'work' : 'works'}, assembled by the people who love you.`
     const frag = document.createDocumentFragment()
-    submissions.forEach((item, i) => frag.append(buildCard(item, i)))
+    submissions.forEach((item, i) => frag.append(buildWork(item, i)))
     board.append(frag)
-    confetti()
   }
 } catch (err) {
   status.textContent = `${err.message} Try refreshing the page.`
