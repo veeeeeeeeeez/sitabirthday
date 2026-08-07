@@ -1,7 +1,10 @@
+import { FilmProjector } from '/film.js'
+
 const $ = (id) => document.getElementById(id)
 
 const form = $('form')
 const stage = $('stage')
+const film = $('film')
 const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
@@ -30,6 +33,7 @@ const MAX_SECONDS = 90
 const POSTER_AT_MS = 1200
 
 let stream = null
+let projector = null
 let recorder = null
 let chunks = []
 let videoBlob = null
@@ -110,10 +114,37 @@ async function startCamera() {
     })
 
     preview.srcObject = stream
-    preview.hidden = false
-    preview.classList.toggle('is-mirrored', facingMode === 'user')
-    stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
+
+    // Wait for real dimensions before sizing the render target.
+    if (!preview.videoWidth) {
+      await new Promise((resolve) => {
+        preview.addEventListener('loadedmetadata', resolve, { once: true })
+        setTimeout(resolve, 2500)
+      })
+    }
+
+    const track = stream.getVideoTracks()[0]?.getSettings?.() ?? {}
+    const srcW = preview.videoWidth || track.width || 720
+    const srcH = preview.videoHeight || track.height || 540
+    // Render a 4:3 Super 8 frame, cropped from whatever the camera gives us.
+    const outH = Math.min(600, srcH)
+    const outW = Math.round(outH * (4 / 3))
+
+    if (!projector) {
+      try {
+        projector = new FilmProjector(film)
+      } catch {
+        projector = null
+        idleText.textContent = 'This browser cannot run the film effect.'
+      }
+    }
+    if (projector) projector.start(preview, outW, outH)
+
+    // Mirroring is a CSS transform only, so captureStream still records the
+    // unmirrored frame the way a camera actually saw it.
+    film.classList.toggle('is-mirrored', facingMode === 'user')
+    stageIdle.style.display = 'none'
 
     shutter.disabled = false
     hint.textContent = ''
@@ -142,17 +173,11 @@ flip.addEventListener('click', () => {
 // Grab a still straight off the live preview. Far more reliable than seeking a
 // freshly recorded blob, which often has no duration metadata yet.
 function capturePoster() {
-  if (posterBlob) return
+  if (posterBlob || !film.width) return
   try {
-    const w = preview.videoWidth
-    const h = preview.videoHeight
-    if (!w || !h) return
-    const scale = Math.min(720 / w, 720 / h, 1)
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(w * scale)
-    canvas.height = Math.round(h * scale)
-    canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
-    canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.82)
+    // Straight off the graded canvas, so the still on the wall is the same
+    // film frame rather than a clean digital one.
+    film.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
   } catch {
     /* a missing poster only costs a prettier card on the wall */
   }
@@ -173,7 +198,12 @@ function startRecording() {
 
   const mimeType = pickMimeType()
   try {
-    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+    // Capture the canvas, not the camera, so the grain, halation and weave are
+    // baked into the file instead of being a preview-only effect. Super 8 runs
+    // at 18fps and so does the render loop.
+    const filmStream = film.captureStream(18)
+    for (const t of stream.getAudioTracks()) filmStream.addTrack(t)
+    recorder = new MediaRecorder(filmStream, mimeType ? { mimeType } : undefined)
   } catch {
     return showError('This browser could not start recording. Try uploading a video instead.')
   }
@@ -266,7 +296,8 @@ scrub.addEventListener('pointerup', (e) => {
 
 function enterReview(url) {
   stopStream()
-  preview.hidden = true
+  projector?.stop()
+  film.hidden = true
   stageIdle.style.display = 'none'
   stageShutter.hidden = true
   flip.classList.remove('is-visible')
@@ -276,6 +307,7 @@ function enterReview(url) {
   playback.src = url
   playback.hidden = false
   playback.loop = true
+  playback.classList.toggle('is-mirrored', false)
   // The stop tap counts as user activation, so sound is usually allowed. Fall
   // back to muted rather than not playing at all.
   playback.muted = false
@@ -303,6 +335,7 @@ function resetToCamera() {
   playback.hidden = true
   playback.removeAttribute('src')
   playback.load()
+  film.hidden = false
 
   review.classList.remove('is-visible')
   stageShutter.hidden = false
@@ -477,7 +510,10 @@ form.addEventListener('submit', async (e) => {
 
 /* -------------------------------------------------------------------- init */
 
-window.addEventListener('pagehide', stopStream)
+window.addEventListener('pagehide', () => {
+  stopStream()
+  projector?.stop()
+})
 
 if (!canRecord()) {
   stageShutter.hidden = true

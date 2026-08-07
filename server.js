@@ -249,6 +249,27 @@ app.post('/api/submissions', async (req, res) => {
   }
 })
 
+// Frames for the strip on the recording page. Deliberately poster images only:
+// the friend recording should see the roll continue above and below them
+// without being handed everyone else's names and notes.
+app.get('/api/reel', async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 8, 1), 24)
+    const items = (await readAllMeta()).filter((i) => i.posterKey).slice(-limit)
+    const frames = await Promise.all(
+      items.map((item) =>
+        getSignedUrl(s3, new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.posterKey }), {
+          expiresIn: PLAYBACK_URL_TTL,
+        }),
+      ),
+    )
+    res.json({ frames })
+  } catch (err) {
+    console.error('reel failed', err)
+    res.json({ frames: [] }) // decorative only, so never fail the page over it
+  }
+})
+
 app.get('/api/submissions', async (_req, res) => {
   try {
     const items = await readAllMeta()
