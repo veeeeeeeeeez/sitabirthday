@@ -339,7 +339,11 @@ export class FilmProjector {
 
   // Advance the mechanical state one film frame.
   advanceFrame(elapsed) {
-    this.frameSeed = Math.random() * 1000
+    // On a take the grain pattern is held across several frames. Reseeding it
+    // 18 times a second is the last thing that still reads as flicker once the
+    // exposure, dust and lamp flare are locked off.
+    this.grainHold = (this.grainHold ?? 0) + 1
+    if (!this.steady || this.grainHold % 4 === 0) this.frameSeed = Math.random() * 1000
 
     // Shutter flicker, with the motor settling over the first second.
     const runUp = Math.max(0, 1 - elapsed / 1.1)
@@ -347,7 +351,7 @@ export class FilmProjector {
 
     // Weave: vertical drift dominates, with the occasional jolt.
     this.weavePhase += 0.28
-    const damp = this.steady ? 0.3 : 1
+    const damp = this.steady ? 0 : 1
     const jump = !this.steady && Math.random() < 0.03 ? (Math.random() - 0.5) * 0.012 : 0
     this.weave = [
       (Math.sin(this.weavePhase * 0.7) * 0.0016 + (Math.random() - 0.5) * 0.0011) * damp,

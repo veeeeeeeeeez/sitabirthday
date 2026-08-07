@@ -114,6 +114,65 @@ async function fillNeighbours() {
 
 fillNeighbours()
 
+/* --------------------------------------------------------- base grain */
+
+// Grain on the film base around the strip. Drawn per pixel so the mean lands
+// exactly on the base colour: a CSS screen blend can only ever lighten, which
+// is what left the page sitting paler than the film. Rendered small and
+// stretched, so it is granular but not razor-edged like digital static.
+function startBaseGrain() {
+  const canvas = document.createElement('canvas')
+  canvas.className = 'bg-grain'
+  canvas.setAttribute('aria-hidden', 'true')
+  document.body.prepend(canvas)
+
+  const ctx = canvas.getContext('2d', { alpha: false })
+  if (!ctx) return
+
+  const SCALE = 3 // render at a third and let the upscale soften it
+  const BASE = [10, 9, 8] // #0a0908
+  let w = 0
+  let h = 0
+
+  const fit = () => {
+    w = Math.max(2, Math.ceil(window.innerWidth / SCALE))
+    h = Math.max(2, Math.ceil(window.innerHeight / SCALE))
+    canvas.width = w
+    canvas.height = h
+  }
+
+  const draw = () => {
+    const frame = ctx.createImageData(w, h)
+    const px = frame.data
+    for (let i = 0; i < px.length; i += 4) {
+      // Three uniforms summed approximates a normal distribution, centred on
+      // zero, so grain darkens as often as it lightens.
+      const n = (Math.random() + Math.random() + Math.random() - 1.5) * 7
+      px[i] = BASE[0] + n
+      px[i + 1] = BASE[1] + n
+      px[i + 2] = BASE[2] + n
+      px[i + 3] = 255
+    }
+    ctx.putImageData(frame, 0, 0)
+  }
+
+  fit()
+  draw()
+  addEventListener('resize', () => {
+    fit()
+    draw()
+  })
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Slow enough to read as film rather than television static.
+    setInterval(() => {
+      if (!document.hidden) draw()
+    }, 110)
+  }
+}
+
+startBaseGrain()
+
 /* --------------------------------------------------------- strip drift */
 
 // The roll creeps very slightly, the way a strip does on a light table.
