@@ -1,25 +1,208 @@
-/* The camera stage: a tall glass viewport with a shutter ring, phone-first. */
+/* Recording page: photo tiles packed into columns either side of the camera,
+   which carries its own controls. Deliberately wordless. */
+
+.record-body {
+  background: #fff;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  /* Plenty of air on all four edges. */
+  padding: clamp(1.25rem, 5vw, 5rem);
+}
+
+.record-body .backdrop,
+.record-body .grain {
+  display: none;
+}
+
+.mosaic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.45rem, 1.6vw, 0.8rem);
+  width: 100%;
+  max-width: 25rem;
+  perspective: 1400px;
+}
+
+/* Each side is a set of vertical runs. Tiles are either 4:3 or 3:4, so the
+   runs end at different heights and the block reads as packed but varied
+   rather than as a plain grid. */
+.col-group {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.45rem, 1.6vw, 0.8rem);
+  width: 100%;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.45rem, 1.6vw, 0.8rem);
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------- the tiles */
+
+.tile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--ratio, 4 / 3);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: tile-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+/* A tile in flight between positions passes over its neighbours. */
+.tile.is-flying {
+  z-index: 8;
+}
+
+.tile-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* Pointer tilt and the click-to-flip angle compose in one transform. */
+  transform: rotateX(var(--rx, 0deg)) rotateY(calc(var(--ry, 0deg) + var(--flip, 0deg)))
+    scale(var(--pop, 1));
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.tile:hover {
+  z-index: 5;
+}
+
+/* Track the pointer closely while hovering, then ease back on release. */
+.tile:hover .tile-inner {
+  --pop: 1.18;
+  transition: transform 0.07s ease-out;
+}
+
+.tile.is-flipped {
+  --flip: 180deg;
+  z-index: 6;
+}
+
+.tile.is-flipped .tile-inner {
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.tile-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  box-shadow: 0 1px 3px rgba(20, 18, 15, 0.1);
+  transition: box-shadow 0.35s ease;
+}
+
+.tile:hover .tile-face {
+  box-shadow: 0 28px 60px rgba(20, 18, 15, 0.28);
+}
+
+.tile-front {
+  background: #f2f0ed;
+}
+
+.tile-front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+.tile-back {
+  transform: rotateY(180deg);
+  display: grid;
+  place-items: center;
+  padding: 0.8rem;
+  background: #16130f;
+}
+
+.tile-back p {
+  margin: 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(0.72rem, 0.95vw, 1rem);
+  line-height: 1.3;
+  text-align: center;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.tile:focus-visible {
+  outline: none;
+}
+
+.tile:focus-visible .tile-face {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* On a phone the full stack would push the camera below the fold, so only the
+   first two tiles of each column are shown. Shuffling still rotates photos
+   through those visible slots. */
+@media (max-width: 59.99rem) {
+  .col > .tile:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------- the pane */
+
+.pane {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+@media (min-width: 60rem) {
+  .mosaic {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    max-width: 74rem;
+    gap: clamp(0.6rem, 1.3vw, 1.1rem);
+  }
+
+  .col-group {
+    flex: 1;
+  }
+
+  .pane {
+    flex: 0 0 clamp(19rem, 30vw, 26rem);
+  }
+}
+
+/* ---------------------------------------------------------------- camera */
 
 .stage {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  max-height: 60svh;
-  margin: 0 auto;
-  border-radius: 26px;
   overflow: hidden;
-  background: #0d0c0a;
-  border: 1px solid var(--glass-line);
-  box-shadow: var(--glass-shadow);
-}
-
-@media (min-width: 34rem) {
-  .stage {
-    aspect-ratio: 4 / 3;
-  }
+  border-radius: 14px;
+  background: #f2f0ed;
+  box-shadow: 0 2px 8px rgba(20, 18, 15, 0.08), 0 20px 50px rgba(20, 18, 15, 0.1);
 }
 
 .stage video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -37,60 +220,46 @@
   display: none;
 }
 
-/* Idle state before camera permission is granted. */
 .stage-idle {
   position: absolute;
   inset: 0;
   display: grid;
-  place-content: center;
-  gap: 0.9rem;
-  justify-items: center;
-  text-align: center;
-  padding: 2rem 1.5rem;
-  background-image: url('/img/marble.jpg');
-  background-size: cover;
-  background-position: center 28%;
-}
-
-.stage-idle::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(247, 245, 241, 0.55), rgba(247, 245, 241, 0.86));
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-}
-
-.stage-idle > * {
-  position: relative;
+  place-items: center;
+  padding: 1.5rem;
+  background: #f2f0ed;
 }
 
 .stage-idle p {
   margin: 0;
-  font-family: var(--display);
-  font-size: 1.15rem;
-  color: var(--ink-soft);
-  max-width: 20rem;
-  line-height: 1.45;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--ink-faint);
+  max-width: 16rem;
 }
 
-/* Recording timer, top-left of the stage. */
+.stage-idle p:empty {
+  display: none;
+}
+
 .timer {
   position: absolute;
-  top: 0.9rem;
-  left: 0.9rem;
+  top: 0.7rem;
+  left: 0.7rem;
   display: none;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.38rem 0.7rem 0.38rem 0.6rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.5rem;
   border-radius: 100px;
-  background: rgba(16, 14, 11, 0.5);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: rgba(16, 14, 11, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   color: #fff;
-  font-size: 0.74rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
+  z-index: 3;
 }
 
 .timer.is-visible {
@@ -98,8 +267,8 @@
 }
 
 .timer i {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #e5484d;
   animation: pulse 1.2s ease-in-out infinite;
@@ -111,73 +280,101 @@
   }
 }
 
-/* Flip-camera button, top-right of the stage. */
-.flip {
+.flip-cam {
   position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
+  top: 0.7rem;
+  right: 0.7rem;
   display: none;
   align-items: center;
   justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2rem;
+  height: 2rem;
   border: none;
   border-radius: 50%;
-  background: rgba(16, 14, 11, 0.4);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: rgba(16, 14, 11, 0.42);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.85rem;
   line-height: 1;
+  cursor: pointer;
+  z-index: 3;
 }
 
-.flip.is-visible {
+.flip-cam.is-visible {
   display: flex;
 }
 
-/* --------------------------------------------------------------- shutter */
+.filepick input {
+  display: none;
+}
 
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-  min-height: 4.75rem;
+.filepick label {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  border-radius: 50%;
+  background: rgba(16, 14, 11, 0.42);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.filepick[hidden] {
+  display: none;
+}
+
+/* ------------------------------------------------------------- shutter */
+
+.stage-shutter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem 1rem 1.15rem;
+  background: linear-gradient(to top, rgba(12, 10, 8, 0.45), rgba(12, 10, 8, 0));
+  z-index: 4;
+}
+
+.stage-shutter[hidden] {
+  display: none;
 }
 
 .shutter {
   position: relative;
-  width: 4.75rem;
-  height: 4.75rem;
+  width: 3.4rem;
+  height: 3.4rem;
   padding: 0;
   border: none;
   background: none;
   border-radius: 50%;
-  flex-shrink: 0;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Outer ring stays put; the inner shape morphs circle -> square while recording,
-   which is the visual language people already know from phone cameras. */
 .shutter .ring {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(22, 19, 15, 0.22);
-  background: var(--glass-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
-  transition: border-color 0.25s ease;
+  border: 2px solid rgba(255, 255, 255, 0.9);
 }
 
 .shutter .core {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #e5484d;
@@ -185,14 +382,10 @@
     height 0.28s cubic-bezier(0.3, 0.9, 0.3, 1), border-radius 0.28s ease;
 }
 
-.shutter[data-state='recording'] .ring {
-  border-color: #e5484d;
-}
-
 .shutter[data-state='recording'] .core {
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 6px;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 4px;
 }
 
 .shutter:disabled {
@@ -200,7 +393,6 @@
   cursor: not-allowed;
 }
 
-/* Countdown ring drawn over the shutter as the time limit approaches. */
 .shutter svg {
   position: absolute;
   inset: -3px;
@@ -223,82 +415,191 @@
   opacity: 1;
 }
 
-.controls .side {
-  width: 5rem;
-  display: flex;
-  justify-content: center;
-}
+/* --------------------------------------------------------------- review */
 
-.controls .side:empty {
-  visibility: hidden;
-}
-
-/* ------------------------------------------------------------ review state */
-
-.review-actions {
+.review {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: none;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: 0.4rem;
+  padding: 2.75rem 0.9rem 1rem;
+  background: linear-gradient(to top, rgba(12, 10, 8, 0.85), rgba(12, 10, 8, 0));
+  z-index: 4;
 }
 
-.review-actions.is-visible {
-  display: flex;
-}
-
-.review-actions .btn {
-  flex: 1;
-}
-
-.hint-line {
-  margin: 1rem 0 0;
-  text-align: center;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-/* Upload-a-file escape hatch, for desktops and denied camera permission. */
-.filepick {
-  margin-top: 0.4rem;
-  text-align: center;
-}
-
-.filepick input {
-  display: none;
-}
-
-.filepick label {
-  display: inline-block;
-  margin: 0;
-  padding: 0.5rem 0.25rem;
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
-  color: var(--ink-faint);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.filepick label:hover {
-  color: var(--ink);
-}
-
-/* The details form only appears once there's something to send. */
-.details {
-  display: none;
-  margin-top: 1.75rem;
-}
-
-.details.is-visible {
-  display: block;
-  animation: rise 0.45s cubic-bezier(0.2, 0.9, 0.3, 1);
+.review.is-visible {
+  display: grid;
+  animation: rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(12px);
+  }
+}
+
+.review input[type='text'] {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #fff;
+  padding: 0.4rem 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  transition: border-color 0.2s ease;
+}
+
+.review input[type='text']::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.review input[type='text']:focus {
+  outline: none;
+  border-bottom-color: #fff;
+}
+
+.review-row {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+}
+
+.pill {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  padding: 0.55rem 1rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.pill:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pill--solid {
+  background: #fff;
+  border-color: #fff;
+  color: var(--ink);
+}
+
+.pill--solid:hover:not(:disabled) {
+  background: #fff;
+  opacity: 0.88;
+}
+
+.pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------- the only playback control */
+
+.scrub {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  display: none;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  z-index: 5;
+  touch-action: none;
+}
+
+.scrub.is-visible {
+  display: block;
+}
+
+/* A larger hit area than the 3px the eye sees. */
+.scrub::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -11px;
+  height: 16px;
+}
+
+.scrub-fill {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+}
+
+/* ----------------------------------------------------------------- misc */
+
+.progress {
+  display: none;
+}
+
+.progress.is-visible {
+  display: block;
+  padding-top: 0.2rem;
+}
+
+.progress .track {
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.progress .bar {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+  transition: width 0.3s ease;
+}
+
+.progress .label {
+  margin-top: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.hint-line {
+  margin: 0.5rem 0 0;
+  min-height: 0.9rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.error {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(160, 44, 32, 0.08);
+  border: 1px solid rgba(160, 44, 32, 0.2);
+  color: #8c2b1e;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  display: none;
+}
+
+.error.is-visible {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .tile-inner {
+    transition: none;
   }
 }

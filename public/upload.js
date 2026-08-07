@@ -6,20 +6,21 @@ const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
 const playback = $('playback')
+const stageShutter = $('stageShutter')
 const shutter = $('shutter')
 const countdown = $('countdown')
 const timer = $('timer')
 const timerText = $('timerText')
 const flip = $('flip')
 const hint = $('hint')
-const reviewActions = $('reviewActions')
-const details = $('details')
+const review = $('reviewActions')
 const filepick = $('filepick')
-const filepickLabel = $('filepickLabel')
 const fileInput = $('video')
 const nameInput = $('name')
 const messageInput = $('message')
 const submitBtn = $('submit')
+const scrub = $('scrub')
+const scrubFill = $('scrubFill')
 const progress = $('progress')
 const progressBar = $('progressBar')
 const progressLabel = $('progressLabel')
@@ -37,6 +38,7 @@ let facingMode = 'user'
 let startedAt = 0
 let tickHandle = null
 let posterTimer = null
+let rafHandle = 0
 let maxUploadMb = 500
 
 const RING = 2 * Math.PI * 48
@@ -49,7 +51,6 @@ fetch('/api/config')
   .then((r) => r.json())
   .then(({ honoree, maxUploadMb: max }) => {
     maxUploadMb = max
-    for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = honoree
     document.title = `A message for ${honoree}`
   })
   .catch(() => {})
@@ -98,7 +99,7 @@ function stopStream() {
 
 async function startCamera() {
   clearError()
-  hint.textContent = 'Waking the camera…'
+  hint.textContent = 'starting camera'
   shutter.disabled = true
 
   try {
@@ -115,7 +116,7 @@ async function startCamera() {
     await preview.play().catch(() => {})
 
     shutter.disabled = false
-    hint.textContent = 'Tap to start recording'
+    hint.textContent = ''
 
     // Only offer the flip control when there is actually a second camera.
     const devices = await navigator.mediaDevices.enumerateDevices().catch(() => [])
@@ -125,11 +126,9 @@ async function startCamera() {
     stageIdle.style.display = ''
     const denied = err?.name === 'NotAllowedError' || err?.name === 'SecurityError'
     idleText.textContent = denied
-      ? 'Camera access was blocked. You can allow it in your browser settings, or upload a video instead.'
-      : 'No camera available on this device — you can upload a video instead.'
+      ? 'Camera blocked. Allow it in your browser settings, or use the arrow to upload.'
+      : 'No camera here. Use the arrow to upload a video.'
     hint.textContent = ''
-    filepickLabel.textContent = 'Upload a video'
-    filepickLabel.style.textTransform = 'uppercase'
   }
 }
 
@@ -155,7 +154,7 @@ function capturePoster() {
     canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
     canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.82)
   } catch {
-    /* a missing poster only costs a prettier card */
+    /* a missing poster only costs a prettier card on the wall */
   }
 }
 
@@ -208,8 +207,8 @@ function startRecording() {
   shutter.setAttribute('aria-label', 'Stop recording')
   timer.classList.add('is-visible')
   flip.classList.remove('is-visible')
-  filepick.style.display = 'none'
-  hint.textContent = `Tap to stop · up to ${MAX_SECONDS}s`
+  filepick.hidden = true
+  hint.textContent = 'recording'
   timerText.textContent = '0:00'
 
   posterTimer = setTimeout(capturePoster, POSTER_AT_MS)
@@ -220,7 +219,7 @@ function stopRecording() {
   clearInterval(tickHandle)
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   shutter.dataset.state = 'idle'
-  shutter.setAttribute('aria-label', 'Start recording')
+  shutter.setAttribute('aria-label', 'Record a video')
   timer.classList.remove('is-visible')
   countdown.style.strokeDashoffset = String(RING)
 }
@@ -231,34 +230,85 @@ shutter.addEventListener('click', () => {
   else startCamera()
 })
 
+/* ---------------------------------------------------- custom playback bar */
+
+function paintScrub() {
+  const d = playback.duration
+  if (Number.isFinite(d) && d > 0) {
+    const pct = Math.min(100, (playback.currentTime / d) * 100)
+    scrubFill.style.width = `${pct}%`
+    scrub.setAttribute('aria-valuenow', String(Math.round(pct)))
+  }
+  rafHandle = requestAnimationFrame(paintScrub)
+}
+
+function seekFromEvent(e) {
+  const r = scrub.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))
+  if (Number.isFinite(playback.duration)) playback.currentTime = ratio * playback.duration
+}
+
+let scrubbing = false
+scrub.addEventListener('pointerdown', (e) => {
+  scrubbing = true
+  scrub.setPointerCapture(e.pointerId)
+  seekFromEvent(e)
+})
+scrub.addEventListener('pointermove', (e) => {
+  if (scrubbing) seekFromEvent(e)
+})
+scrub.addEventListener('pointerup', (e) => {
+  scrubbing = false
+  scrub.releasePointerCapture(e.pointerId)
+})
+
 /* ------------------------------------------------------------ review state */
 
 function enterReview(url) {
   stopStream()
   preview.hidden = true
+  stageIdle.style.display = 'none'
+  stageShutter.hidden = true
+  flip.classList.remove('is-visible')
+  filepick.hidden = true
+  hint.textContent = ''
+
   playback.src = url
   playback.hidden = false
-  stage.querySelector('.stage-idle').style.display = 'none'
+  playback.loop = true
+  // The stop tap counts as user activation, so sound is usually allowed. Fall
+  // back to muted rather than not playing at all.
+  playback.muted = false
+  playback.play().catch(() => {
+    playback.muted = true
+    playback.play().catch(() => {})
+  })
 
-  shutter.style.display = 'none'
-  hint.style.display = 'none'
-  filepick.style.display = 'none'
-  reviewActions.classList.add('is-visible')
+  scrub.classList.add('is-visible')
+  cancelAnimationFrame(rafHandle)
+  rafHandle = requestAnimationFrame(paintScrub)
+
+  review.classList.add('is-visible')
 }
 
 function resetToCamera() {
   videoBlob = null
   posterBlob = null
+
+  cancelAnimationFrame(rafHandle)
+  scrub.classList.remove('is-visible')
+  scrubFill.style.width = '0%'
+
+  playback.pause()
   playback.hidden = true
   playback.removeAttribute('src')
   playback.load()
 
-  reviewActions.classList.remove('is-visible')
-  details.classList.remove('is-visible')
-  shutter.style.display = ''
-  hint.style.display = ''
-  filepick.style.display = ''
+  review.classList.remove('is-visible')
+  stageShutter.hidden = false
+  filepick.hidden = false
   fileInput.value = ''
+
   startCamera()
 }
 
@@ -267,17 +317,10 @@ $('retake').addEventListener('click', () => {
   resetToCamera()
 })
 
-$('keep').addEventListener('click', () => {
-  reviewActions.classList.remove('is-visible')
-  details.classList.add('is-visible')
-  nameInput.focus({ preventScroll: true })
-  details.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-})
-
 /* ------------------------------------------------- uploaded-file fallback */
 
-// Seek-and-draw, used only for files the user picked (a recording gets its
-// poster off the live preview instead).
+// Seek-and-draw, used only for files the user picked; a recording gets its
+// poster off the live preview instead.
 function posterFromFile(file) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
@@ -360,7 +403,7 @@ function putWithProgress(url, blob, contentType, onProgress) {
 
 const setProgress = (fraction, label) => {
   progressBar.style.width = `${Math.round(fraction * 100)}%`
-  if (label) progressLabel.textContent = label
+  progressLabel.textContent = label ?? ''
 }
 
 form.addEventListener('submit', async (e) => {
@@ -375,9 +418,9 @@ form.addEventListener('submit', async (e) => {
   if (!videoBlob) return showError('Please record or choose a video first.')
 
   submitBtn.disabled = true
-  submitBtn.textContent = 'Sending'
+  $('retake').disabled = true
   progress.classList.add('is-visible')
-  setProgress(0, 'Preparing')
+  setProgress(0, '')
 
   try {
     const res = await fetch('/api/uploads', {
@@ -388,14 +431,14 @@ form.addEventListener('submit', async (e) => {
     const slot = await res.json()
     if (!res.ok) throw new Error(slot.error || 'Could not start the upload.')
 
-    // The PUT is signed over the server's normalized type, so echo it back exactly.
+    // The PUT is signed over the server's normalized type, so echo it back.
     await putWithProgress(slot.videoUrl, videoBlob, slot.contentType, (f) =>
-      setProgress(f * 0.94, `Uploading ${Math.round(f * 100)}%`),
+      setProgress(f * 0.94, `${Math.round(f * 100)}%`),
     )
 
     let hasPoster = false
     if (posterBlob) {
-      setProgress(0.96, 'Almost there')
+      setProgress(0.96, '')
       try {
         await putWithProgress(slot.posterUrl, posterBlob, 'image/jpeg', () => {})
         hasPoster = true
@@ -404,7 +447,7 @@ form.addEventListener('submit', async (e) => {
       }
     }
 
-    setProgress(0.98, 'Hanging it on the wall')
+    setProgress(0.98, '')
     const save = await fetch('/api/submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -419,16 +462,16 @@ form.addEventListener('submit', async (e) => {
     })
     if (!save.ok) throw new Error((await save.json()).error || 'Could not save your message.')
 
-    setProgress(1, 'Sent')
+    setProgress(1, '')
     stopStream()
     sessionStorage.setItem('senderName', name)
     window.location.href = '/thanks'
   } catch (err) {
     showError(`${err.message} Your video was not sent — please try again.`)
     submitBtn.disabled = false
-    submitBtn.textContent = 'Send to the gallery'
+    $('retake').disabled = false
     progress.classList.remove('is-visible')
-    setProgress(0)
+    setProgress(0, '')
   }
 })
 
@@ -436,14 +479,7 @@ form.addEventListener('submit', async (e) => {
 
 window.addEventListener('pagehide', stopStream)
 
-if (canRecord()) {
-  // Wait for a tap: browsers require a user gesture, and it is politer than
-  // demanding camera permission the instant the page opens.
-  hint.textContent = 'Tap to turn on the camera'
-} else {
-  shutter.disabled = true
-  shutter.style.display = 'none'
-  hint.style.display = 'none'
-  idleText.textContent = 'Recording is not supported in this browser — upload a video instead.'
-  filepickLabel.textContent = 'Upload a video'
+if (!canRecord()) {
+  stageShutter.hidden = true
+  idleText.textContent = 'Recording is not supported here. Use the arrow to upload a video.'
 }
