@@ -2,7 +2,9 @@ services:
   - type: web
     name: sitabirthday
     runtime: node
-    plan: starter
+    # Free instances sleep after 15min idle (~30s cold start). Bump to "starter"
+    # before the birthday so her first click is instant.
+    plan: free
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /healthz
