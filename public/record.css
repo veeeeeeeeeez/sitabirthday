@@ -11,7 +11,7 @@
   min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: clamp(1rem, 4vw, 2.5rem);
+  padding: clamp(1.25rem, 4vw, 2.5rem);
 }
 
 .record-body .backdrop,
@@ -38,6 +38,9 @@
   flex-direction: column;
   align-items: center;
   gap: clamp(0.9rem, 2.5vh, 1.4rem);
+  /* A bounded content column, so the layout is the same shape on a small
+     phone and a large one. */
+  width: min(100%, 30rem);
 }
 
 /* ------------------------------------------------------------------ intro */
@@ -410,6 +413,14 @@
   width: var(--stage-w);
 }
 
+/* A phone has the width to spare, and the drawing pad in particular wants it.
+   Above this the block stays matched to the picture. */
+@media (max-width: 47.99rem) {
+  .review {
+    width: 100%;
+  }
+}
+
 .review.is-visible {
   display: grid;
 }
@@ -579,10 +590,9 @@
   min-width: 0;
 }
 
-/* Eight circles and seven gaps across the width of the picture. */
 .sketch {
-  --pencil-gap: 0.25rem;
-  --pencil: min(1.2rem, calc((var(--stage-w) - 7 * var(--pencil-gap)) / 8));
+  --pencil-gap: 0.28rem;
+  --pencil: 1.3rem;
 }
 
 .swatch {
