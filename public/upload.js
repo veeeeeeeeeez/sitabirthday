@@ -4,6 +4,8 @@ const form = $('form')
 const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
+const mirror = $('mirror')
+const intro = $('intro')
 const playback = $('playback')
 const shutter = $('shutter')
 const countdown = $('countdown')
@@ -37,6 +39,8 @@ let startedAt = 0
 let tickHandle = null
 let posterTimer = null
 let rafHandle = 0
+let mirrorRaf = 0
+let lastMirrorAt = 0
 let maxUploadMb = 500
 
 const RING = 2 * Math.PI * 48
@@ -50,6 +54,7 @@ fetch('/api/config')
   .then(({ honoree, maxUploadMb: max }) => {
     maxUploadMb = max
     document.title = `A message for ${honoree}`
+    for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = honoree
   })
   .catch(() => {})
 
@@ -90,7 +95,44 @@ const canRecord = () =>
 
 /* ------------------------------------------------------------------ camera */
 
+// Snapchat keeps the mirror: what you saw while recording is what gets saved.
+// That means flipping has to happen in the pixels, not in CSS, so the camera is
+// drawn to a canvas and the recording is taken from there. The rear camera is
+// drawn straight through.
+function startMirrorLoop() {
+  const ctx = mirror.getContext('2d')
+  if (!ctx) return
+
+  const loop = (now) => {
+    if (!stream) return
+    mirrorRaf = requestAnimationFrame(loop)
+
+    // ~30fps is plenty and leaves headroom on a phone.
+    if (now - lastMirrorAt < 32) return
+    lastMirrorAt = now
+
+    const w = preview.videoWidth
+    const h = preview.videoHeight
+    if (!w || !h) return
+    if (mirror.width !== w || mirror.height !== h) {
+      mirror.width = w
+      mirror.height = h
+    }
+
+    ctx.save()
+    if (facingMode === 'user') {
+      ctx.translate(w, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(preview, 0, 0, w, h)
+    ctx.restore()
+  }
+  cancelAnimationFrame(mirrorRaf)
+  mirrorRaf = requestAnimationFrame(loop)
+}
+
 function stopStream() {
+  cancelAnimationFrame(mirrorRaf)
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
 }
@@ -109,11 +151,13 @@ async function startCamera() {
 
     preview.srcObject = stream
     preview.hidden = false
-    // Mirrored only for the person looking at it; the recording is the raw
-    // stream, so the file itself is never flipped.
+    // The preview and the canvas the recording comes from flip together, so
+    // what you see is what gets saved.
     preview.classList.toggle('is-mirrored', facingMode === 'user')
     stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
+
+    startMirrorLoop()
 
     shutter.disabled = false
     hint.textContent = ''
@@ -122,12 +166,19 @@ async function startCamera() {
     const devices = await navigator.mediaDevices.enumerateDevices().catch(() => [])
     if (devices.filter((d) => d.kind === 'videoinput').length > 1) flip.classList.add('is-visible')
   } catch (err) {
-    shutter.disabled = true
     stageIdle.style.display = ''
     const denied = err?.name === 'NotAllowedError' || err?.name === 'SecurityError'
-    idleText.textContent = denied
-      ? 'Camera blocked. Allow it in your browser settings, or use the arrow to upload.'
-      : 'No camera here. Use the arrow to upload a video.'
+    const missing = err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError'
+
+    // Leave the button live so a tap retries. Starting the camera on load can
+    // be refused before anyone has touched anything (Safari in particular), and
+    // dead-ending on that would be a poor first impression.
+    shutter.disabled = missing
+    idleText.textContent = missing
+      ? 'No camera here. Use the arrow to upload a video instead.'
+      : denied
+        ? 'Camera access is off. Allow it, then press record again.'
+        : 'Press record to turn on the camera.'
     hint.textContent = ''
   }
 }
@@ -141,17 +192,10 @@ flip.addEventListener('click', () => {
 
 // A still off the live preview, used as the thumbnail on the wall.
 function capturePoster() {
-  if (posterBlob) return
+  if (posterBlob || !mirror.width) return
   try {
-    const w = preview.videoWidth
-    const h = preview.videoHeight
-    if (!w || !h) return
-    const scale = Math.min(720 / w, 720 / h, 1)
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(w * scale)
-    canvas.height = Math.round(h * scale)
-    canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
-    canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
+    // Off the mirrored canvas, so the thumbnail matches the video.
+    mirror.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
   } catch {
     /* a missing poster only costs a prettier card on the wall */
   }
@@ -172,7 +216,10 @@ function startRecording() {
 
   const mimeType = pickMimeType()
   try {
-    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+    // Capture the canvas rather than the camera, so the mirror is in the file.
+    const mirrored = mirror.captureStream(30)
+    for (const t of stream.getAudioTracks()) mirrored.addTrack(t)
+    recorder = new MediaRecorder(mirrored, mimeType ? { mimeType } : undefined)
   } catch {
     return showError('This browser could not start recording. Try uploading a video instead.')
   }
@@ -288,6 +335,8 @@ function enterReview(url) {
   rafHandle = requestAnimationFrame(paintScrub)
 
   review.classList.add('is-visible')
+  intro.classList.add('is-done')
+  nameInput.focus({ preventScroll: true })
 }
 
 function resetToCamera() {
@@ -304,6 +353,7 @@ function resetToCamera() {
   playback.load()
 
   review.classList.remove('is-visible')
+  intro.classList.remove('is-done')
   shutter.hidden = false
   filepick.hidden = false
   fileInput.value = ''
@@ -480,4 +530,8 @@ window.addEventListener('pagehide', stopStream)
 if (!canRecord()) {
   shutter.hidden = true
   idleText.textContent = 'Recording is not supported here. Use the arrow to upload a video.'
+} else {
+  // Bring the camera up straight away so the button records on the first tap
+  // rather than spending one on waking the camera.
+  startCamera()
 }

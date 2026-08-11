@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
@@ -20,9 +20,16 @@
   </head>
   <body class="record-body">
     <form class="stage-wrap" id="form" novalidate>
+      <header class="intro" id="intro">
+        <h1>Leave <em data-honoree>Sita</em> a birthday message</h1>
+        <p id="introLine">Press record and say something lovely. A minute is plenty.</p>
+      </header>
+
       <div class="stage" id="stage">
         <video id="preview" playsinline muted autoplay></video>
         <video id="playback" playsinline loop></video>
+        <!-- The recording is taken from here, so the mirror is in the file. -->
+        <canvas id="mirror" hidden></canvas>
 
         <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
 

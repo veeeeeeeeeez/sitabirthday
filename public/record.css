@@ -17,7 +17,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: clamp(0.9rem, 2.5vh, 1.4rem);
+}
+
+/* ------------------------------------------------------------------ intro */
+
+.intro {
+  text-align: center;
+  max-width: 26rem;
+}
+
+.intro h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.65rem, 5.5vw, 2.4rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.4rem;
+  color: #16130f;
+}
+
+.intro h1 em {
+  font-style: italic;
+}
+
+.intro p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.6;
+  color: #8a8279;
+}
+
+/* Once the take is done the instructions have served their purpose. */
+.intro.is-done p {
+  visibility: hidden;
 }
 
 /* --------------------------------------------------------------- the frame */
@@ -26,7 +60,7 @@
    half the screen either way. */
 .stage {
   position: relative;
-  height: min(56svh, 118vw);
+  height: min(50svh, 112vw);
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 10px;
@@ -35,7 +69,7 @@
 
 @media (min-width: 48rem) {
   .stage {
-    height: min(72svh, 52vw);
+    height: min(64svh, 48vw);
     aspect-ratio: 4 / 3;
   }
 }
@@ -50,10 +84,14 @@
   background: #12100e;
 }
 
-/* The selfie preview is mirrored so it behaves like a mirror; the recording is
-   the raw camera stream, so the file is never mirrored. */
+/* Mirrored like a mirror, and the recording is taken from a canvas that flips
+   the same way, so the file matches what you saw while recording. */
 #preview.is-mirrored {
   transform: scaleX(-1);
+}
+
+#mirror {
+  display: none;
 }
 
 .stage video[hidden] {
