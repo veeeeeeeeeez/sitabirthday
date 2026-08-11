@@ -137,6 +137,7 @@ function open(index) {
 
   if (lightbox.hidden) lastFocused = document.activeElement
   lbVideo.src = item.videoUrl
+  lbVideo.classList.toggle('is-mirrored', Boolean(item.mirrored))
   lbName.textContent = `${pad(index + 1)} — ${item.name}`
   lbMessage.textContent = item.message || ''
   lbMessage.hidden = !item.message

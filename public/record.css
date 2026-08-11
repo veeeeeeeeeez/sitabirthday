@@ -147,7 +147,8 @@
 
 /* Mirrored so it behaves like a mirror while you record. The file itself is the
    camera stream untouched. */
-#preview.is-mirrored {
+#preview.is-mirrored,
+#playback.is-mirrored {
   transform: scaleX(-1);
 }
 

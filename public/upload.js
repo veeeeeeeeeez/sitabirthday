@@ -35,6 +35,9 @@ let chunks = []
 let videoBlob = null
 let posterBlob = null
 let facingMode = 'user'
+// Front-camera takes are shown flipped everywhere they are played, so the
+// result matches what the person saw while recording.
+let mirrored = false
 let startedAt = 0
 let tickHandle = null
 let posterTimer = null
@@ -93,11 +96,11 @@ const canRecord = () =>
 
 /* ------------------------------------------------------------------ camera */
 
-// The recording is the camera stream itself. Routing it through a canvas to
-// bake in a mirror meant re-encoding every frame, and that is where the green
-// cast came from - canvas capture and the video encoder disagreeing about
-// colour. The preview is still mirrored so it behaves like a mirror to record
-// into; the file is left exactly as the camera produced it.
+// The mirror is applied when the video is played, not baked into the file.
+// Baking it meant drawing every frame to a canvas and re-encoding from
+// captureStream, and that re-encode is where the green cast came from. Flipping
+// at playback gets the same Snapchat result - preview, review and the wall all
+// show it mirrored - with the file left exactly as the camera produced it.
 function stopStream() {
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
@@ -117,7 +120,8 @@ async function startCamera() {
 
     preview.srcObject = stream
     preview.hidden = false
-    preview.classList.toggle('is-mirrored', facingMode === 'user')
+    mirrored = facingMode === 'user'
+    preview.classList.toggle('is-mirrored', mirrored)
     stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
 
@@ -163,7 +167,12 @@ function capturePoster() {
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(w * scale)
     canvas.height = Math.round(h * scale)
-    canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
+    const ctx = canvas.getContext('2d')
+    if (mirrored) {
+      ctx.translate(canvas.width, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(preview, 0, 0, canvas.width, canvas.height)
     canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
   } catch {
     /* a missing poster only costs a prettier card on the wall */
@@ -291,6 +300,7 @@ function enterReview(url) {
   playback.src = url
   playback.hidden = false
   playback.loop = true
+  playback.classList.toggle('is-mirrored', mirrored)
   // Stopping the take counts as user activation, so sound is usually allowed.
   // Fall back to muted rather than not playing at all.
   playback.muted = false
@@ -402,6 +412,7 @@ fileInput.addEventListener('change', async () => {
   }
 
   videoBlob = file
+  mirrored = false
   posterBlob = await posterFromFile(file)
   enterReview(URL.createObjectURL(file))
 })
@@ -484,6 +495,7 @@ form.addEventListener('submit', async (e) => {
         videoKey: slot.videoKey,
         posterKey: slot.posterKey,
         hasPoster,
+        mirrored,
         name,
         message: messageInput.value.trim(),
       }),

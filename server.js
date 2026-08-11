@@ -206,7 +206,7 @@ app.post('/api/uploads', async (req, res) => {
 // counts once this lands, which keeps abandoned uploads off the wall.
 app.post('/api/submissions', async (req, res) => {
   try {
-    const { id, videoKey, posterKey, name, message, hasPoster } = req.body ?? {}
+    const { id, videoKey, posterKey, name, message, hasPoster, mirrored } = req.body ?? {}
 
     // Keys are echoed back from /api/uploads, so re-derive them rather than
     // trusting the client to point us at some other object in the bucket.
@@ -229,6 +229,9 @@ app.post('/api/submissions', async (req, res) => {
       message: clean(message, 500),
       videoKey,
       posterKey: hasPoster ? posterKey : null,
+      // Front-camera takes are played back flipped, so what she sees matches
+      // what the person saw while recording.
+      mirrored: Boolean(mirrored),
       createdAt: new Date().toISOString(),
     }
 
@@ -278,6 +281,7 @@ app.get('/api/submissions', async (_req, res) => {
         id: item.id,
         name: item.name,
         message: item.message,
+        mirrored: Boolean(item.mirrored),
         createdAt: item.createdAt,
         videoUrl: await getSignedUrl(
           s3,
