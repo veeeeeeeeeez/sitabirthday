@@ -91,7 +91,7 @@ fetch('/api/config')
   .then((r) => r.json())
   .then(({ honoree, maxUploadMb: max }) => {
     maxUploadMb = max
-    document.title = `A message for ${honoree}`
+    document.title = `Wish ${honoree} a Happy 22nd!`
     for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = honoree
   })
   .catch(() => {})
