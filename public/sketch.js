@@ -16,11 +16,31 @@ const PASTELS = [
   '#6f6862', // graphite
 ]
 
+// Pastel tints and a couple of deeper shades for a hue, so the popup offers
+// something usable without turning into a full colour wheel.
+function tintsFor(hue) {
+  const out = []
+  for (const [s, l] of [
+    [70, 86],
+    [62, 78],
+    [58, 70],
+    [52, 62],
+    [46, 52],
+    [40, 40],
+  ]) {
+    out.push(`hsl(${hue} ${s}% ${l}%)`)
+  }
+  return out
+}
+
 export class Sketch {
-  constructor({ canvas, swatches, picker, clearButton }) {
+  constructor({ canvas, swatches, toggle, popover, grid, hue, clearButton }) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.picker = picker
+    this.toggle = toggle
+    this.popover = popover
+    this.grid = grid
+    this.hue = hue
     this.colour = PASTELS[0]
     this.drawing = false
     this.dirty = false
@@ -28,12 +48,7 @@ export class Sketch {
     this.sized = false
 
     this.buildSwatches(swatches)
-
-    picker.value = this.colour
-    picker.addEventListener('input', () => {
-      this.colour = picker.value
-      this.markActive(null)
-    })
+    this.buildPicker()
 
     clearButton.addEventListener('click', () => this.clear())
 
@@ -64,6 +79,50 @@ export class Sketch {
 
   markActive(el) {
     for (const s of this.swatchEls) s.classList.toggle('is-active', s === el)
+    this.toggle.classList.toggle('is-active', el === null)
+  }
+
+  buildPicker() {
+    const paint = () => {
+      this.grid.textContent = ''
+      for (const colour of tintsFor(Number(this.hue.value))) {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.className = 'tint'
+        b.style.setProperty('--c', colour)
+        b.setAttribute('aria-label', colour)
+        b.addEventListener('click', () => {
+          this.colour = colour
+          this.toggle.style.setProperty('--picked', colour)
+          this.markActive(null)
+          this.closePicker()
+        })
+        this.grid.append(b)
+      }
+    }
+
+    paint()
+    this.hue.addEventListener('input', paint)
+
+    this.toggle.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.popover.hidden ? this.openPicker() : this.closePicker()
+    })
+    this.popover.addEventListener('click', (e) => e.stopPropagation())
+    document.addEventListener('click', () => this.closePicker())
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closePicker()
+    })
+  }
+
+  openPicker() {
+    this.popover.hidden = false
+    this.toggle.setAttribute('aria-expanded', 'true')
+  }
+
+  closePicker() {
+    this.popover.hidden = true
+    this.toggle.setAttribute('aria-expanded', 'false')
   }
 
   // Kept in step with the CSS box rather than sized once. A one-shot version

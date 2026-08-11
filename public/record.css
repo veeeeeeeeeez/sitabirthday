@@ -19,6 +19,20 @@
   display: none;
 }
 
+/* iOS Safari gives buttons and inputs a native appearance that overrides
+   background, border and radius. Without opting out, every control here renders
+   as a stock iOS button on a phone while looking correct everywhere else.
+   Deliberately only appearance: an element+class selector outranks the plain
+   class selectors the components use, so anything else set here would clobber
+   them. */
+.record-body button,
+.record-body input,
+.record-body textarea {
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .stage-wrap {
   display: flex;
   flex-direction: column;
@@ -89,9 +103,9 @@
    Only after recording: before that there is no note yet and the picture should
    be its full size. */
 .stage-wrap.is-review.is-drawn {
-  --stage-h: min(34svh, 68vw);
+  --stage-h: min(32svh, 64vw);
   --stage-w: calc(var(--stage-h) * 3 / 4);
-  --sketch-h: 7.5rem;
+  --sketch-h: min(9rem, 22svh);
 }
 
 .stage {
@@ -117,7 +131,7 @@
   .stage-wrap.is-review.is-drawn {
     --stage-h: min(30svh, 24vw);
     --stage-w: calc(var(--stage-h) * 3 / 2);
-    --sketch-h: 8rem;
+    --sketch-h: min(15rem, 26svh);
   }
 
   /* A short laptop has less room than a phone once the fields are in. */
@@ -125,6 +139,12 @@
     .stage-wrap.is-review {
       --stage-h: min(36svh, 30vw);
       --stage-w: calc(var(--stage-h) * 3 / 2);
+    }
+
+    .stage-wrap.is-review.is-drawn {
+      --stage-h: min(25svh, 22vw);
+      --stage-w: calc(var(--stage-h) * 3 / 2);
+      --sketch-h: min(15rem, 25svh);
     }
   }
 
@@ -398,7 +418,8 @@
 .review textarea {
   width: 100%;
   font-family: var(--serif);
-  font-size: 0.95rem;
+  /* 16px: below that iOS zooms the page in when the field takes focus. */
+  font-size: 1rem;
   color: #16130f;
   padding: 0.5rem 0;
   background: transparent;
@@ -554,7 +575,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.28rem;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -577,38 +598,132 @@
   box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #16130f;
 }
 
-/* The native colour input is unstyleable, so it is hidden inside a swatch-sized
-   well that shows the current colour. */
-.custom-colour {
+/* The native colour input cannot be styled at all, and on iOS it renders as a
+   system control, so this is a custom picker instead. */
+.picker-wrap {
   position: relative;
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid rgba(22, 19, 15, 0.14);
-  background: conic-gradient(
-    #f2a3b3,
-    #f6c99a,
-    #f3e3a3,
-    #a9d9bd,
-    #a3c9e8,
-    #c3b3e6,
-    #f2a3b3
-  );
-  cursor: pointer;
   flex: 0 0 auto;
 }
 
-.custom-colour input {
-  position: absolute;
-  inset: -25%;
-  width: 150%;
-  height: 150%;
+.custom-colour {
+  width: 1.2rem;
+  height: 1.2rem;
   padding: 0;
-  border: none;
-  background: none;
-  opacity: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(22, 19, 15, 0.14);
+  background: var(--picked, conic-gradient(
+      #f2a3b3,
+      #f6c99a,
+      #f3e3a3,
+      #a9d9bd,
+      #a3c9e8,
+      #c3b3e6,
+      #f2a3b3
+    ));
   cursor: pointer;
+}
+
+.custom-colour.is-active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #16130f;
+}
+
+.picker {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  width: 11.5rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(22, 19, 15, 0.1);
+  box-shadow: 0 10px 30px rgba(22, 19, 15, 0.16);
+}
+
+.picker[hidden] {
+  display: none;
+}
+
+/* A little tail, so it reads as attached to the button. */
+.picker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  transform: rotate(45deg);
+  background: #fff;
+  border-right: 1px solid rgba(22, 19, 15, 0.1);
+  border-bottom: 1px solid rgba(22, 19, 15, 0.1);
+  border-bottom-right-radius: 3px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.28rem;
+}
+
+.tint {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(22, 19, 15, 0.1);
+  background: var(--c);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.tint:hover {
+  transform: scale(1.15);
+}
+
+.hue {
+  width: 100%;
+  height: 0.7rem;
+  border-radius: 100px;
+  background: linear-gradient(
+    to right,
+    #ff5f6d,
+    #ffc371,
+    #f7f18c,
+    #9be7b8,
+    #8fd3f4,
+    #b8a7e8,
+    #ff5f6d
+  );
+  cursor: pointer;
+}
+
+.hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(22, 19, 15, 0.25);
+  box-shadow: 0 1px 4px rgba(22, 19, 15, 0.25);
+  cursor: pointer;
+}
+
+.hue::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(22, 19, 15, 0.25);
+}
+
+.sketch-tools .mini {
+  margin-left: auto;
 }
 
 .mini {

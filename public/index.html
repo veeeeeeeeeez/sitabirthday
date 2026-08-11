@@ -69,9 +69,27 @@
             <canvas id="sketchCanvas"></canvas>
             <div class="sketch-tools">
               <div class="swatches" id="swatches"></div>
-              <label class="custom-colour" title="Pick a colour">
-                <input type="color" id="colourPicker" value="#f2a3b3" />
-              </label>
+              <div class="picker-wrap">
+                <button
+                  type="button"
+                  class="custom-colour"
+                  id="pickerToggle"
+                  aria-label="Pick a colour"
+                  aria-expanded="false"
+                ></button>
+                <div class="picker" id="picker" hidden>
+                  <div class="picker-grid" id="pickerGrid"></div>
+                  <input
+                    type="range"
+                    class="hue"
+                    id="hueRange"
+                    min="0"
+                    max="360"
+                    value="340"
+                    aria-label="Hue"
+                  />
+                </div>
+              </div>
               <button type="button" class="mini" id="sketchClear">Clear</button>
             </div>
           </div>

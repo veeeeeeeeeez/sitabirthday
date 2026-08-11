@@ -53,7 +53,10 @@ let noteMode = 'drawn'
 const sketch = new Sketch({
   canvas: $('sketchCanvas'),
   swatches: $('swatches'),
-  picker: $('colourPicker'),
+  toggle: $('pickerToggle'),
+  popover: $('picker'),
+  grid: $('pickerGrid'),
+  hue: $('hueRange'),
   clearButton: $('sketchClear'),
 })
 
