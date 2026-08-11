@@ -20,10 +20,7 @@
       </header>
 
       <div class="stage" id="stage">
-        <!-- Source only: never shown, it just feeds the canvas. -->
         <video id="preview" playsinline muted autoplay></video>
-        <!-- What you actually see, and the exact thing that gets recorded. -->
-        <canvas id="mirror"></canvas>
         <video id="playback" playsinline loop hidden></video>
 
         <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
@@ -67,6 +64,19 @@
       </div>
 
       <div class="controls" id="controls">
+        <button type="button" class="icon-btn" id="retry" aria-label="Start over">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
         <button
           type="button"
           class="shutter"
@@ -83,7 +93,7 @@
 
         <div class="filepick" id="filepick">
           <input type="file" id="video" accept="video/*" />
-          <label for="video" id="filepickLabel">
+          <label for="video" id="filepickLabel" class="icon-btn" aria-label="Upload a video instead">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"
@@ -94,9 +104,9 @@
                 stroke-linejoin="round"
               />
             </svg>
-            Upload
           </label>
         </div>
+      </div>
       </div>
 
       <p class="hint-line" id="hint"></p>

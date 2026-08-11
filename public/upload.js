@@ -4,7 +4,6 @@ const form = $('form')
 const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
-const mirror = $('mirror')
 const intro = $('intro')
 const playback = $('playback')
 const shutter = $('shutter')
@@ -39,8 +38,6 @@ let startedAt = 0
 let tickHandle = null
 let posterTimer = null
 let rafHandle = 0
-let mirrorRaf = 0
-let lastMirrorAt = 0
 let maxUploadMb = 500
 
 const RING = 2 * Math.PI * 48
@@ -95,44 +92,12 @@ const canRecord = () =>
 
 /* ------------------------------------------------------------------ camera */
 
-// Snapchat keeps the mirror: what you saw while recording is what gets saved.
-// That means flipping has to happen in the pixels, not in CSS, so the camera is
-// drawn to a canvas and the recording is taken from there. The rear camera is
-// drawn straight through.
-function startMirrorLoop() {
-  const ctx = mirror.getContext('2d')
-  if (!ctx) return
-
-  const loop = (now) => {
-    if (!stream) return
-    mirrorRaf = requestAnimationFrame(loop)
-
-    // ~30fps is plenty and leaves headroom on a phone.
-    if (now - lastMirrorAt < 32) return
-    lastMirrorAt = now
-
-    const w = preview.videoWidth
-    const h = preview.videoHeight
-    if (!w || !h) return
-    if (mirror.width !== w || mirror.height !== h) {
-      mirror.width = w
-      mirror.height = h
-    }
-
-    ctx.save()
-    if (facingMode === 'user') {
-      ctx.translate(w, 0)
-      ctx.scale(-1, 1)
-    }
-    ctx.drawImage(preview, 0, 0, w, h)
-    ctx.restore()
-  }
-  cancelAnimationFrame(mirrorRaf)
-  mirrorRaf = requestAnimationFrame(loop)
-}
-
+// The recording is the camera stream itself. Routing it through a canvas to
+// bake in a mirror meant re-encoding every frame, and that is where the green
+// cast came from - canvas capture and the video encoder disagreeing about
+// colour. The preview is still mirrored so it behaves like a mirror to record
+// into; the file is left exactly as the camera produced it.
 function stopStream() {
-  cancelAnimationFrame(mirrorRaf)
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
 }
@@ -150,11 +115,10 @@ async function startCamera() {
     })
 
     preview.srcObject = stream
-    mirror.hidden = false
+    preview.hidden = false
+    preview.classList.toggle('is-mirrored', facingMode === 'user')
     stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
-
-    startMirrorLoop()
 
     shutter.disabled = false
     hint.textContent = ''
@@ -189,10 +153,17 @@ flip.addEventListener('click', () => {
 
 // A still off the live preview, used as the thumbnail on the wall.
 function capturePoster() {
-  if (posterBlob || !mirror.width) return
+  if (posterBlob) return
   try {
-    // Off the mirrored canvas, so the thumbnail matches the video.
-    mirror.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
+    const w = preview.videoWidth
+    const h = preview.videoHeight
+    if (!w || !h) return
+    const scale = Math.min(720 / w, 720 / h, 1)
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(w * scale)
+    canvas.height = Math.round(h * scale)
+    canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
   } catch {
     /* a missing poster only costs a prettier card on the wall */
   }
@@ -213,10 +184,7 @@ function startRecording() {
 
   const mimeType = pickMimeType()
   try {
-    // Capture the canvas rather than the camera, so the mirror is in the file.
-    const mirrored = mirror.captureStream(30)
-    for (const t of stream.getAudioTracks()) mirrored.addTrack(t)
-    recorder = new MediaRecorder(mirrored, mimeType ? { mimeType } : undefined)
+    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
   } catch {
     return showError('This browser could not start recording. Try uploading a video instead.')
   }
@@ -309,7 +277,7 @@ scrub.addEventListener('pointerup', (e) => {
 
 function enterReview(url) {
   stopStream()
-  mirror.hidden = true
+  preview.hidden = true
   stageIdle.style.display = 'none'
   shutter.hidden = true
   flip.classList.remove('is-visible')
@@ -349,7 +317,7 @@ function resetToCamera() {
   playback.hidden = true
   playback.removeAttribute('src')
   playback.load()
-  mirror.hidden = false
+  preview.hidden = false
 
   review.classList.remove('is-visible')
   intro.classList.remove('is-done')
@@ -362,6 +330,13 @@ function resetToCamera() {
 }
 
 $('retake').addEventListener('click', () => {
+  clearError()
+  resetToCamera()
+})
+
+// Start over. Not offered mid-take, where stop is the thing you want.
+$('retry').addEventListener('click', () => {
+  if (shutter.dataset.state === 'recording') return
   clearError()
   resetToCamera()
 })
