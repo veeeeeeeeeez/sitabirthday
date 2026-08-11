@@ -1,6 +1,11 @@
 /* Recording page: one frame, centred on white. Nothing else. */
 
 .record-body {
+  /* Georgia is on every machine, so nothing to download and nothing to wait
+     for. Serif for the words, plain system sans for the controls. */
+  --serif: Georgia, 'Times New Roman', Times, serif;
+  --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
   background: #fff;
   min-height: 100svh;
   display: grid;
@@ -28,7 +33,7 @@
 }
 
 .intro h1 {
-  font-family: var(--display);
+  font-family: var(--serif);
   font-weight: 400;
   font-size: clamp(1.65rem, 5.5vw, 2.4rem);
   line-height: 1.15;
@@ -43,9 +48,9 @@
 
 .intro p {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  line-height: 1.6;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
   color: #8a8279;
 }
 
@@ -58,9 +63,14 @@
 
 /* Portrait on a phone, landscape on a desktop, sized so the picture is roughly
    half the screen either way. */
+.stage-wrap {
+  --stage-h: min(50svh, 112vw);
+  --stage-w: calc(var(--stage-h) * 3 / 4);
+}
+
 .stage {
   position: relative;
-  height: min(50svh, 112vw);
+  height: var(--stage-h);
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 10px;
@@ -68,8 +78,12 @@
 }
 
 @media (min-width: 48rem) {
+  .stage-wrap {
+    --stage-h: min(64svh, 48vw);
+    --stage-w: calc(var(--stage-h) * 4 / 3);
+  }
+
   .stage {
-    height: min(64svh, 48vw);
     aspect-ratio: 4 / 3;
   }
 }
@@ -110,8 +124,8 @@
 
 .stage-idle p {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 0.68rem;
+  font-family: var(--serif);
+  font-size: 0.85rem;
   line-height: 1.5;
   text-align: center;
   color: #8a8279;
@@ -133,7 +147,7 @@
   border-radius: 100px;
   background: rgba(10, 8, 6, 0.55);
   color: #fff;
-  font-family: var(--mono);
+  font-family: var(--ui);
   font-size: 0.64rem;
   font-variant-numeric: tabular-nums;
   z-index: 3;
@@ -157,11 +171,12 @@
   }
 }
 
-.flip-cam,
-.filepick label {
+/* Camera flip stays on the picture: it is a camera control. */
+.flip-cam {
   position: absolute;
   top: 0.7rem;
-  display: grid;
+  right: 0.7rem;
+  display: none;
   place-items: center;
   width: 2rem;
   height: 2rem;
@@ -176,28 +191,60 @@
   z-index: 3;
 }
 
-.flip-cam {
-  right: 0.7rem;
-  display: none;
-}
-
 .flip-cam.is-visible {
   display: grid;
 }
 
-.filepick label {
-  right: 3.1rem;
+/* ------------------------------------------------------------- controls */
+
+.controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
 }
 
+/* Sits beside the record button rather than over the picture. */
 .filepick input {
   display: none;
+}
+
+.filepick label {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin: 0;
+  border: 1px solid rgba(22, 19, 15, 0.2);
+  border-radius: 50%;
+  color: #6f675e;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.filepick label:hover {
+  border-color: #16130f;
+  color: #16130f;
+}
+
+.filepick label svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .filepick[hidden] {
   display: none;
 }
 
-/* ------------------------------------------------------------- shutter */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 .shutter {
   position: relative;
@@ -271,16 +318,11 @@
 
 /* --------------------------------------------------------------- review */
 
+/* Under the picture, not over it, and matched to its width. */
 .review {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: none;
-  gap: 0.4rem;
-  padding: 3rem 0.9rem 1rem;
-  background: linear-gradient(to top, rgba(10, 8, 6, 0.88), rgba(10, 8, 6, 0));
-  z-index: 4;
+  gap: 0.55rem;
+  width: min(var(--stage-w), 34rem);
 }
 
 .review.is-visible {
@@ -289,63 +331,66 @@
 
 .review input[type='text'] {
   width: 100%;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: #fff;
-  padding: 0.4rem 0;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: #16130f;
+  padding: 0.5rem 0;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(22, 19, 15, 0.16);
   border-radius: 0;
   transition: border-color 0.2s ease;
 }
 
 .review input[type='text']::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: #a49c92;
 }
 
 .review input[type='text']:focus {
   outline: none;
-  border-bottom-color: #fff;
+  border-bottom-color: #16130f;
 }
 
 .review-row {
   display: flex;
   gap: 0.5rem;
-  padding-top: 0.35rem;
+  padding-top: 0.3rem;
 }
 
 .pill {
   flex: 1;
-  font-family: var(--mono);
+  font-family: var(--ui);
   font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  padding: 0.55rem 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
   border-radius: 100px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: transparent;
-  color: #fff;
+  border: 1px solid rgba(22, 19, 15, 0.2);
+  background: #fff;
+  color: #16130f;
   cursor: pointer;
-  transition: background 0.2s ease, opacity 0.2s ease;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
 .pill:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.16);
+  border-color: #16130f;
 }
 
-.pill--solid {
-  background: #fff;
-  border-color: #fff;
-  color: #16130f;
+.pill--dark {
+  background: #16130f;
+  border-color: #16130f;
+  color: #fff;
 }
 
-.pill--solid:hover:not(:disabled) {
-  background: #fff;
-  opacity: 0.88;
+.pill--dark:hover:not(:disabled) {
+  background: #16130f;
+  opacity: 0.86;
 }
 
 .pill:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -396,22 +441,22 @@
 
 .progress .track {
   height: 1.5px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(22, 19, 15, 0.12);
   overflow: hidden;
 }
 
 .progress .bar {
   height: 100%;
   width: 0%;
-  background: #fff;
+  background: #16130f;
   transition: width 0.3s ease;
 }
 
 .progress .label {
   margin-top: 0.3rem;
-  font-family: var(--mono);
-  font-size: 0.58rem;
-  color: rgba(255, 255, 255, 0.75);
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  color: #8a8279;
   text-align: center;
 }
 
@@ -419,9 +464,10 @@
   margin: 0;
   min-height: 0.9rem;
   text-align: center;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
+  font-family: var(--ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #9a9289;
 }
 
@@ -432,7 +478,7 @@
   background: rgba(160, 44, 32, 0.08);
   border: 1px solid rgba(160, 44, 32, 0.2);
   color: #8c2b1e;
-  font-family: var(--mono);
+  font-family: var(--ui);
   font-size: 0.62rem;
   line-height: 1.5;
   text-align: center;
@@ -441,4 +487,41 @@
 
 .error.is-visible {
   display: block;
+}
+
+/* ---------------------------------------------------------------- thanks */
+
+.thanks {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  max-width: 26rem;
+}
+
+.thanks h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 6vw, 2.6rem);
+  line-height: 1.15;
+  margin: 0;
+  color: #16130f;
+}
+
+.thanks h1 em {
+  font-style: italic;
+}
+
+.thanks p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #8a8279;
+}
+
+.thanks .pill {
+  flex: 0 0 auto;
+  margin-top: 1.4rem;
+  padding-inline: 1.6rem;
 }

@@ -9,12 +9,6 @@
     <title>A message for Sita</title>
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#ffffff" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/record.css" />
   </head>
@@ -38,31 +32,6 @@
 
         <button type="button" class="flip-cam" id="flip" aria-label="Switch camera">&#8635;</button>
 
-        <div class="filepick" id="filepick">
-          <input type="file" id="video" accept="video/*" />
-          <label for="video" id="filepickLabel" aria-label="Upload a video instead">&#8593;</label>
-        </div>
-
-        <div class="review" id="reviewActions">
-          <input
-            type="text"
-            id="name"
-            maxlength="60"
-            autocomplete="name"
-            placeholder="Your name"
-            required
-          />
-          <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
-          <div class="review-row">
-            <button type="button" class="pill" id="retake">Retake</button>
-            <button type="submit" class="pill pill--solid" id="submit">Send</button>
-          </div>
-          <div class="progress" id="progress">
-            <div class="track"><div class="bar" id="progressBar"></div></div>
-            <div class="label" id="progressLabel"></div>
-          </div>
-        </div>
-
         <div
           class="scrub"
           id="scrub"
@@ -77,19 +46,58 @@
         </div>
       </div>
 
-      <button
-        type="button"
-        class="shutter"
-        id="shutter"
-        data-state="idle"
-        aria-label="Record a video"
-      >
-        <span class="ring"></span>
-        <span class="core"></span>
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <circle id="countdown" cx="50" cy="50" r="48" />
-        </svg>
-      </button>
+      <div class="review" id="reviewActions">
+        <input
+          type="text"
+          id="name"
+          maxlength="60"
+          autocomplete="name"
+          placeholder="Your name"
+          required
+        />
+        <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
+        <div class="review-row">
+          <button type="button" class="pill" id="retake">Retake</button>
+          <button type="submit" class="pill pill--dark" id="submit">Send</button>
+        </div>
+        <div class="progress" id="progress">
+          <div class="track"><div class="bar" id="progressBar"></div></div>
+          <div class="label" id="progressLabel"></div>
+        </div>
+      </div>
+
+      <div class="controls" id="controls">
+        <button
+          type="button"
+          class="shutter"
+          id="shutter"
+          data-state="idle"
+          aria-label="Record a video"
+        >
+          <span class="ring"></span>
+          <span class="core"></span>
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle id="countdown" cx="50" cy="50" r="48" />
+          </svg>
+        </button>
+
+        <div class="filepick" id="filepick">
+          <input type="file" id="video" accept="video/*" />
+          <label for="video" id="filepickLabel" title="Upload a video instead">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="sr-only">Upload a video instead</span>
+          </label>
+        </div>
+      </div>
 
       <p class="hint-line" id="hint"></p>
       <div class="error" id="error" role="alert"></div>
