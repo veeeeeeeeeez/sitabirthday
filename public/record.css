@@ -574,14 +574,21 @@
 .swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.28rem;
+  gap: var(--pencil-gap);
   flex: 0 1 auto;
   min-width: 0;
 }
 
+/* Eight circles and seven gaps across the width of the picture. */
+.sketch {
+  --pencil-gap: 0.25rem;
+  --pencil: min(1.2rem, calc((var(--stage-w) - 7 * var(--pencil-gap)) / 8));
+}
+
 .swatch {
-  width: 1.2rem;
-  height: 1.2rem;
+  display: block;
+  width: var(--pencil);
+  height: var(--pencil);
   padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(22, 19, 15, 0.14);
@@ -600,14 +607,20 @@
 
 /* The native colour input cannot be styled at all, and on iOS it renders as a
    system control, so this is a custom picker instead. */
+/* A block wrapper leaves a baseline gap under the button, which makes the
+   wrapper taller than the circle and lifts it out of line with the pencils. */
 .picker-wrap {
   position: relative;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  line-height: 0;
 }
 
 .custom-colour {
-  width: 1.2rem;
-  height: 1.2rem;
+  display: block;
+  width: var(--pencil);
+  height: var(--pencil);
   padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(22, 19, 15, 0.14);

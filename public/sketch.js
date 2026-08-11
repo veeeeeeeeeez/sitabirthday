@@ -37,6 +37,7 @@ export class Sketch {
   constructor({ canvas, swatches, toggle, popover, grid, hue, clearButton }) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
+    this.swatchBox = swatches
     this.toggle = toggle
     this.popover = popover
     this.grid = grid
@@ -83,6 +84,11 @@ export class Sketch {
   }
 
   buildPicker() {
+    // The picker lives with the pencils rather than beside them, so it is just
+    // the last circle in the row and wraps with the rest instead of being
+    // pushed onto a line of its own.
+    this.swatchBox.append(this.toggle.parentElement)
+
     const paint = () => {
       this.grid.textContent = ''
       for (const colour of tintsFor(Number(this.hue.value))) {
