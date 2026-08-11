@@ -150,10 +150,7 @@ async function startCamera() {
     })
 
     preview.srcObject = stream
-    preview.hidden = false
-    // The preview and the canvas the recording comes from flip together, so
-    // what you see is what gets saved.
-    preview.classList.toggle('is-mirrored', facingMode === 'user')
+    mirror.hidden = false
     stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
 
@@ -312,7 +309,7 @@ scrub.addEventListener('pointerup', (e) => {
 
 function enterReview(url) {
   stopStream()
-  preview.hidden = true
+  mirror.hidden = true
   stageIdle.style.display = 'none'
   shutter.hidden = true
   flip.classList.remove('is-visible')
@@ -351,6 +348,7 @@ function resetToCamera() {
   playback.hidden = true
   playback.removeAttribute('src')
   playback.load()
+  mirror.hidden = false
 
   review.classList.remove('is-visible')
   intro.classList.remove('is-done')

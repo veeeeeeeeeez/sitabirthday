@@ -26,10 +26,11 @@
       </header>
 
       <div class="stage" id="stage">
+        <!-- Source only: never shown, it just feeds the canvas. -->
         <video id="preview" playsinline muted autoplay></video>
-        <video id="playback" playsinline loop></video>
-        <!-- The recording is taken from here, so the mirror is in the file. -->
-        <canvas id="mirror" hidden></canvas>
+        <!-- What you actually see, and the exact thing that gets recorded. -->
+        <canvas id="mirror"></canvas>
+        <video id="playback" playsinline loop hidden></video>
 
         <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
 

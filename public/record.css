@@ -74,7 +74,8 @@
   }
 }
 
-.stage video {
+.stage video,
+.stage canvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -84,17 +85,17 @@
   background: #12100e;
 }
 
-/* Mirrored like a mirror, and the recording is taken from a canvas that flips
-   the same way, so the file matches what you saw while recording. */
-#preview.is-mirrored {
-  transform: scaleX(-1);
+/* The camera element is only ever a source texture. It stays in the layout and
+   keeps decoding - display:none would let the browser stop giving us frames -
+   but it is never seen. The canvas above it is both the preview and the thing
+   MediaRecorder captures, so the mirror cannot drift out of step with the file. */
+#preview {
+  opacity: 0;
+  pointer-events: none;
 }
 
-#mirror {
-  display: none;
-}
-
-.stage video[hidden] {
+.stage video[hidden],
+.stage canvas[hidden] {
   display: none;
 }
 
