@@ -11,6 +11,7 @@ const countdown = $('countdown')
 const timer = $('timer')
 const timerText = $('timerText')
 const flip = $('flip')
+const controls = $('controls')
 const hint = $('hint')
 const review = $('reviewActions')
 const filepick = $('filepick')
@@ -218,7 +219,8 @@ function startRecording() {
   shutter.setAttribute('aria-label', 'Stop recording')
   timer.classList.add('is-visible')
   flip.classList.remove('is-visible')
-  filepick.hidden = true
+  // Kept in place rather than hidden: removing it shifted the whole row.
+  filepick.classList.add('is-inert')
   hint.textContent = 'recording'
   timerText.textContent = '0:00'
 
@@ -228,6 +230,7 @@ function startRecording() {
 
 function stopRecording() {
   clearInterval(tickHandle)
+  filepick.classList.remove('is-inert')
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   shutter.dataset.state = 'idle'
   shutter.setAttribute('aria-label', 'Record a video')
@@ -279,9 +282,10 @@ function enterReview(url) {
   stopStream()
   preview.hidden = true
   stageIdle.style.display = 'none'
-  shutter.hidden = true
+  // The whole row goes: retake and send live under the video now.
+  controls.hidden = true
   flip.classList.remove('is-visible')
-  filepick.hidden = true
+  filepick.classList.remove('is-inert')
   hint.textContent = ''
 
   playback.src = url
@@ -322,8 +326,9 @@ function resetToCamera() {
   review.classList.remove('is-visible')
   intro.classList.remove('is-done')
   form.classList.remove('is-review')
+  controls.hidden = false
   shutter.hidden = false
-  filepick.hidden = false
+  filepick.classList.remove('is-inert')
   fileInput.value = ''
 
   startCamera()

@@ -145,13 +145,10 @@
   background: #12100e;
 }
 
-/* The camera element is only ever a source texture. It stays in the layout and
-   keeps decoding - display:none would let the browser stop giving us frames -
-   but it is never seen. The canvas above it is both the preview and the thing
-   MediaRecorder captures, so the mirror cannot drift out of step with the file. */
-#preview {
-  opacity: 0;
-  pointer-events: none;
+/* Mirrored so it behaves like a mirror while you record. The file itself is the
+   camera stream untouched. */
+#preview.is-mirrored {
+  transform: scaleX(-1);
 }
 
 .stage video[hidden],
@@ -243,6 +240,10 @@
 
 /* ------------------------------------------------------------- controls */
 
+.controls[hidden] {
+  display: none;
+}
+
 .controls {
   display: flex;
   align-items: center;
@@ -286,6 +287,12 @@
 
 .filepick[hidden] {
   display: none;
+}
+
+/* Held in place but inert mid-take, so the row never jumps. */
+.filepick.is-inert {
+  pointer-events: none;
+  opacity: 0.3;
 }
 
 .shutter {
