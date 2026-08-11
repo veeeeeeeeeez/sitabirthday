@@ -1,6 +1,7 @@
 import express from 'express'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
   S3Client,
@@ -82,6 +83,16 @@ const baseMimeType = (value) => String(value ?? '').split(';')[0].trim().toLower
 
 const PLAYBACK_URL_TTL = 60 * 60 * 6 // 6h: long enough for one sitting on the wall
 const UPLOAD_URL_TTL = 60 * 60 // 1h: generous for a slow phone upload
+
+// Changing a cache header does not reach a browser that already cached the old
+// one - it will not ask again until that hour is up. Stamping the asset URLs
+// changes the resource, so a new deploy is picked up immediately.
+const BUILD = Date.now().toString(36)
+
+function page(file) {
+  const html = readFileSync(path.join(__dirname, 'public', file), 'utf8')
+  return html.replace(/(href|src)="(\/[^"]+\.(?:js|css))"/g, `$1="$2?v=${BUILD}"`)
+}
 
 const app = express()
 app.set('trust proxy', 1)
@@ -240,7 +251,7 @@ app.post('/api/submissions', async (req, res) => {
       noteKey: hasNote ? `notes/${id}.png` : null,
       // Front-camera takes are played back flipped, so what she sees matches
       // what the person saw while recording.
-      mirrored: Boolean(mirrored),
+      mirrored: mirrored === undefined ? true : Boolean(mirrored),
       createdAt: new Date().toISOString(),
     }
 
@@ -290,7 +301,7 @@ app.get('/api/submissions', async (_req, res) => {
         id: item.id,
         name: item.name,
         message: item.message,
-        mirrored: Boolean(item.mirrored),
+        mirrored: item.mirrored !== false,
         createdAt: item.createdAt,
         noteUrl: item.noteKey
           ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.noteKey }), {
@@ -359,12 +370,12 @@ app.use((_req, res, next) => {
   next()
 })
 
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
-app.get('/thanks', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'thanks.html')))
+app.get('/', (_req, res) => res.type('html').send(page('index.html')))
+app.get('/thanks', (_req, res) => res.type('html').send(page('thanks.html')))
 
 // The wall sits behind an unguessable path so a forwarded link can't spoil it.
 const wallPath = VIEW_KEY ? `/wall/${VIEW_KEY}` : '/wall'
-app.get(wallPath, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'wall.html')))
+app.get(wallPath, (_req, res) => res.type('html').send(page('wall.html')))
 app.get('/wall*', (_req, res) => res.status(404).sendFile(path.join(__dirname, 'public', 'index.html')))
 
 app.use((_req, res) => res.redirect('/'))
