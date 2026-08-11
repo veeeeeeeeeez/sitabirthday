@@ -239,6 +239,13 @@
   white-space: nowrap;
 }
 
+.work-note-drawn {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 0.2rem;
+}
+
 .work-note {
   margin: 0.15rem 0 0;
   font-family: var(--display);
@@ -397,6 +404,17 @@
   line-height: 1.45;
   color: var(--ink-soft);
   overflow-wrap: anywhere;
+}
+
+.lightbox-note {
+  display: block;
+  max-width: min(22rem, 100%);
+  margin: 0.5rem auto 0;
+  height: auto;
+}
+
+.lightbox-note[hidden] {
+  display: none;
 }
 
 .lightbox-index {

@@ -85,6 +85,15 @@
   display: none;
 }
 
+/* A drawing pad is taller than a two-line field, so the picture gives up more.
+   Only after recording: before that there is no note yet and the picture should
+   be its full size. */
+.stage-wrap.is-review.is-drawn {
+  --stage-h: min(34svh, 68vw);
+  --stage-w: calc(var(--stage-h) * 3 / 4);
+  --sketch-h: 7.5rem;
+}
+
 .stage {
   position: relative;
   height: var(--stage-h);
@@ -103,6 +112,12 @@
   .stage-wrap.is-review {
     --stage-h: min(44svh, 32vw);
     --stage-w: calc(var(--stage-h) * 3 / 2);
+  }
+
+  .stage-wrap.is-review.is-drawn {
+    --stage-h: min(30svh, 24vw);
+    --stage-w: calc(var(--stage-h) * 3 / 2);
+    --sketch-h: 8rem;
   }
 
   /* A short laptop has less room than a phone once the fields are in. */
@@ -450,6 +465,169 @@
 .pill:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ----------------------------------------------------------------- note */
+
+.note {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.note-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.note-label {
+  font-family: var(--ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9a9289;
+}
+
+.note-modes {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.mode {
+  font-family: var(--ui);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(22, 19, 15, 0.16);
+  border-radius: 100px;
+  background: #fff;
+  color: #8a8279;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.mode.is-active {
+  background: #16130f;
+  border-color: #16130f;
+  color: #fff;
+}
+
+/* ------------------------------------------------------------- sketch pad */
+
+#message[hidden] {
+  display: none;
+}
+
+.sketch[hidden] {
+  display: none;
+}
+
+.sketch {
+  display: grid;
+  gap: 0.45rem;
+}
+
+#sketchCanvas {
+  width: 100%;
+  height: var(--sketch-h, 8rem);
+  display: block;
+  border: 1px solid rgba(22, 19, 15, 0.16);
+  border-radius: 8px;
+  background: #fffdfa;
+  cursor: crosshair;
+  /* Otherwise a finger drag scrolls the page instead of drawing. */
+  touch-action: none;
+}
+
+/* Wraps rather than overflowing: seven swatches plus the picker and Clear are
+   wider than the picture on a phone. */
+.sketch-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.35rem;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.swatch {
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(22, 19, 15, 0.14);
+  background: var(--c);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.12);
+}
+
+.swatch.is-active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #16130f;
+}
+
+/* The native colour input is unstyleable, so it is hidden inside a swatch-sized
+   well that shows the current colour. */
+.custom-colour {
+  position: relative;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(22, 19, 15, 0.14);
+  background: conic-gradient(
+    #f2a3b3,
+    #f6c99a,
+    #f3e3a3,
+    #a9d9bd,
+    #a3c9e8,
+    #c3b3e6,
+    #f2a3b3
+  );
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.custom-colour input {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  padding: 0;
+  border: none;
+  background: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mini {
+  font-family: var(--ui);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(22, 19, 15, 0.16);
+  border-radius: 100px;
+  background: #fff;
+  color: #8a8279;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.mini:hover {
+  border-color: #16130f;
+  color: #16130f;
 }
 
 /* --------------------------------------------- the only playback control */

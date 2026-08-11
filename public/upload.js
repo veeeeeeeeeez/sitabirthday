@@ -1,3 +1,5 @@
+import { Sketch } from '/sketch.js'
+
 const $ = (id) => document.getElementById(id)
 
 const form = $('form')
@@ -18,6 +20,9 @@ const filepick = $('filepick')
 const fileInput = $('video')
 const nameInput = $('name')
 const messageInput = $('message')
+const sketchPad = $('sketch')
+const modeTyped = $('modeTyped')
+const modeDrawn = $('modeDrawn')
 const submitBtn = $('submit')
 const scrub = $('scrub')
 const scrubFill = $('scrubFill')
@@ -43,6 +48,35 @@ let tickHandle = null
 let posterTimer = null
 let rafHandle = 0
 let maxUploadMb = 500
+let noteMode = 'drawn'
+
+const sketch = new Sketch({
+  canvas: $('sketchCanvas'),
+  swatches: $('swatches'),
+  picker: $('colourPicker'),
+  clearButton: $('sketchClear'),
+})
+
+function setNoteMode(mode) {
+  noteMode = mode
+  const drawn = mode === 'drawn'
+  modeTyped.classList.toggle('is-active', !drawn)
+  modeDrawn.classList.toggle('is-active', drawn)
+  modeTyped.setAttribute('aria-pressed', String(!drawn))
+  modeDrawn.setAttribute('aria-pressed', String(drawn))
+  messageInput.hidden = drawn
+  sketchPad.hidden = !drawn
+  form.classList.toggle('is-drawn', drawn)
+  // The pad has no box until it is visible, so it can only be sized now.
+  if (drawn) requestAnimationFrame(() => sketch.ensureSize())
+}
+
+setNoteMode('drawn')
+modeTyped.addEventListener('click', () => setNoteMode('typed'))
+modeDrawn.addEventListener('click', () => setNoteMode('drawn'))
+addEventListener('resize', () => {
+  if (noteMode === 'drawn') sketch.ensureSize()
+})
 
 const RING = 2 * Math.PI * 48
 countdown.style.strokeDasharray = String(RING)
@@ -316,6 +350,7 @@ function enterReview(url) {
   review.classList.add('is-visible')
   intro.classList.add('is-done')
   form.classList.add('is-review')
+  if (noteMode === 'drawn') requestAnimationFrame(() => sketch.ensureSize())
   nameInput.focus({ preventScroll: true })
 }
 
@@ -336,6 +371,8 @@ function resetToCamera() {
   review.classList.remove('is-visible')
   intro.classList.remove('is-done')
   form.classList.remove('is-review')
+  setNoteMode('drawn')
+  sketch.clear()
   controls.hidden = false
   shutter.hidden = false
   filepick.classList.remove('is-inert')
@@ -475,6 +512,18 @@ form.addEventListener('submit', async (e) => {
       setProgress(f * 0.94, `${Math.round(f * 100)}%`),
     )
 
+    // A drawn note is a small PNG uploaded the same way the poster is.
+    let hasNote = false
+    const noteBlob = noteMode === 'drawn' ? await sketch.toBlob() : null
+    if (noteBlob) {
+      try {
+        await putWithProgress(slot.noteUrl, noteBlob, 'image/png', () => {})
+        hasNote = true
+      } catch {
+        hasNote = false
+      }
+    }
+
     let hasPoster = false
     if (posterBlob) {
       setProgress(0.96, '')
@@ -495,9 +544,10 @@ form.addEventListener('submit', async (e) => {
         videoKey: slot.videoKey,
         posterKey: slot.posterKey,
         hasPoster,
+        hasNote,
         mirrored,
         name,
-        message: messageInput.value.trim(),
+        message: noteMode === 'drawn' ? '' : messageInput.value.trim(),
       }),
     })
     if (!save.ok) throw new Error((await save.json()).error || 'Could not save your message.')

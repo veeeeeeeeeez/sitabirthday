@@ -6,6 +6,7 @@ const lightbox = $('lightbox')
 const lbVideo = $('lbVideo')
 const lbName = $('lbName')
 const lbMessage = $('lbMessage')
+const lbNote = $('lbNote')
 const lbIndex = $('lbIndex')
 const lbPrev = $('lbPrev')
 const lbNext = $('lbNext')
@@ -83,7 +84,14 @@ function buildWork(item, index) {
   name.textContent = item.name
   text.append(name)
 
-  if (item.message) {
+  if (item.noteUrl) {
+    const drawn = document.createElement('img')
+    drawn.className = 'work-note-drawn'
+    drawn.src = item.noteUrl
+    drawn.alt = 'A drawn note'
+    drawn.loading = 'lazy'
+    text.append(drawn)
+  } else if (item.message) {
     const note = document.createElement('p')
     note.className = 'work-note'
     note.textContent = item.message
@@ -139,8 +147,11 @@ function open(index) {
   lbVideo.src = item.videoUrl
   lbVideo.classList.toggle('is-mirrored', Boolean(item.mirrored))
   lbName.textContent = `${pad(index + 1)} — ${item.name}`
+  // A note is either typed or drawn, never both.
   lbMessage.textContent = item.message || ''
   lbMessage.hidden = !item.message
+  lbNote.src = item.noteUrl || ''
+  lbNote.hidden = !item.noteUrl
   lbIndex.textContent = `${pad(index + 1)} of ${pad(submissions.length)}`
   lbPrev.disabled = index === 0
   lbNext.disabled = index === submissions.length - 1

@@ -52,7 +52,30 @@
           placeholder="Your name"
           required
         />
-        <textarea id="message" maxlength="500" rows="2" placeholder="A note (optional)"></textarea>
+        <div class="note">
+          <div class="note-head">
+            <span class="note-label">A note</span>
+            <div class="note-modes">
+              <button type="button" class="mode" id="modeTyped" aria-pressed="false">
+                Typed
+              </button>
+              <button type="button" class="mode is-active" id="modeDrawn" aria-pressed="true">Drawn</button>
+            </div>
+          </div>
+
+          <textarea id="message" maxlength="500" rows="2" placeholder="Say something (optional)" hidden></textarea>
+
+          <div class="sketch" id="sketch">
+            <canvas id="sketchCanvas"></canvas>
+            <div class="sketch-tools">
+              <div class="swatches" id="swatches"></div>
+              <label class="custom-colour" title="Pick a colour">
+                <input type="color" id="colourPicker" value="#f2a3b3" />
+              </label>
+              <button type="button" class="mini" id="sketchClear">Clear</button>
+            </div>
+          </div>
+        </div>
         <div class="review-row">
           <button type="button" class="pill" id="retake">Retake</button>
           <button type="submit" class="pill pill--dark" id="submit">Send</button>

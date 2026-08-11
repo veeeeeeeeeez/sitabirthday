@@ -179,8 +179,10 @@ app.post('/api/uploads', async (req, res) => {
     const id = randomUUID()
     const videoKey = `videos/${id}${ext}`
     const posterKey = `posters/${id}.jpg`
+    // A note can be drawn instead of typed, in which case it is a small PNG.
+    const noteKey = `notes/${id}.png`
 
-    const [videoUrl, posterUrl] = await Promise.all([
+    const [videoUrl, posterUrl, noteUrl] = await Promise.all([
       getSignedUrl(
         s3,
         new PutObjectCommand({ Bucket: R2_BUCKET, Key: videoKey, ContentType: type }),
@@ -191,11 +193,16 @@ app.post('/api/uploads', async (req, res) => {
         new PutObjectCommand({ Bucket: R2_BUCKET, Key: posterKey, ContentType: 'image/jpeg' }),
         { expiresIn: UPLOAD_URL_TTL },
       ),
+      getSignedUrl(
+        s3,
+        new PutObjectCommand({ Bucket: R2_BUCKET, Key: noteKey, ContentType: 'image/png' }),
+        { expiresIn: UPLOAD_URL_TTL },
+      ),
     ])
 
     // Echo the normalized type back: the PUT is signed over it, so the browser has
     // to send this exact header rather than the raw MediaRecorder mime string.
-    res.json({ id, videoKey, posterKey, videoUrl, posterUrl, contentType: type })
+    res.json({ id, videoKey, posterKey, noteKey, videoUrl, posterUrl, noteUrl, contentType: type })
   } catch (err) {
     console.error('presign failed', err)
     res.status(500).json({ error: 'Could not start the upload. Please try again.' })
@@ -206,7 +213,8 @@ app.post('/api/uploads', async (req, res) => {
 // counts once this lands, which keeps abandoned uploads off the wall.
 app.post('/api/submissions', async (req, res) => {
   try {
-    const { id, videoKey, posterKey, name, message, hasPoster, mirrored } = req.body ?? {}
+    const { id, videoKey, posterKey, name, message, hasPoster, hasNote, mirrored } =
+      req.body ?? {}
 
     // Keys are echoed back from /api/uploads, so re-derive them rather than
     // trusting the client to point us at some other object in the bucket.
@@ -229,6 +237,7 @@ app.post('/api/submissions', async (req, res) => {
       message: clean(message, 500),
       videoKey,
       posterKey: hasPoster ? posterKey : null,
+      noteKey: hasNote ? `notes/${id}.png` : null,
       // Front-camera takes are played back flipped, so what she sees matches
       // what the person saw while recording.
       mirrored: Boolean(mirrored),
@@ -283,6 +292,11 @@ app.get('/api/submissions', async (_req, res) => {
         message: item.message,
         mirrored: Boolean(item.mirrored),
         createdAt: item.createdAt,
+        noteUrl: item.noteKey
+          ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.noteKey }), {
+              expiresIn: PLAYBACK_URL_TTL,
+            })
+          : null,
         videoUrl: await getSignedUrl(
           s3,
           new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.videoKey }),
@@ -311,7 +325,7 @@ app.delete('/api/submissions/:id', async (req, res) => {
     const item = (await readAllMeta()).find((s) => s.id === req.params.id)
     if (!item) return res.sendStatus(404)
 
-    const keys = [metaKey(item.id), item.videoKey, item.posterKey].filter(Boolean)
+    const keys = [metaKey(item.id), item.videoKey, item.posterKey, item.noteKey].filter(Boolean)
     await Promise.all(
       keys.map((Key) => s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key }))),
     )
