@@ -1,5 +1,9 @@
 /* Recording page: one frame, centred on white. Nothing else. */
 
+/* The page is exactly one screen tall and the picture takes whatever is left
+   over after the words and the controls. Picking a fraction of the viewport
+   instead cannot satisfy both "as big as possible" and "never scrolls", because
+   the heading and the buttons cost the same on a short phone as a tall one. */
 .record-body {
   /* Georgia is on every machine, so nothing to download and nothing to wait
      for. Serif for the words, plain system sans for the controls. */
@@ -9,9 +13,13 @@
 
   background: #fff;
   min-height: 100svh;
+  height: 100svh;
   display: grid;
-  place-items: center;
-  padding: clamp(1.25rem, 4vw, 2.5rem);
+  justify-items: center;
+  /* Stretched, not centred: flex-grow inside needs a container with a real
+     height or the picture collapses to nothing. */
+  align-items: stretch;
+  padding: clamp(1.875rem, 4vw, 2.5rem);
 }
 
 .record-body .backdrop,
@@ -37,10 +45,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.9rem, 2.5vh, 1.4rem);
+  gap: clamp(0.8rem, 2vh, 1.4rem);
   /* A bounded content column, so the layout is the same shape on a small
      phone and a large one. */
   width: min(100%, 30rem);
+  height: 100%;
+  min-height: 0;
+  justify-content: center;
 }
 
 /* ------------------------------------------------------------------ intro */
@@ -85,7 +96,7 @@
 /* Portrait on a phone, landscape on a desktop, sized so the picture is roughly
    half the screen either way. */
 .stage-wrap {
-  --stage-h: min(62svh, 124vw);
+  --stage-h: min(66svh, 132vw);
   --stage-w: calc(var(--stage-h) * 3 / 4);
 }
 
@@ -108,12 +119,19 @@
 .stage-wrap.is-review.is-drawn {
   --stage-h: min(32svh, 64vw);
   --stage-w: calc(var(--stage-h) * 3 / 4);
-  --sketch-h: min(9rem, 22svh);
+  --sketch-h: min(12rem, 27svh);
 }
 
 .stage {
   position: relative;
-  height: var(--stage-h);
+  /* Takes the leftover height; the aspect ratio then sets the width. */
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  width: auto;
+  max-height: var(--stage-h);
+  max-width: 100%;
+  align-self: center;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 10px;
@@ -151,7 +169,19 @@
     }
   }
 
+  /* The column cap is a phone concern; on a desktop it would squeeze the
+     picture down to the width of a phone. */
+  .stage-wrap {
+    width: auto;
+    max-width: 100%;
+  }
+
+  /* A desktop has the height to spare, so the picture goes back to being sized
+     directly rather than taking what is left. */
   .stage {
+    flex: 0 0 auto;
+    height: var(--stage-h);
+    max-height: none;
     aspect-ratio: 3 / 2;
   }
 }

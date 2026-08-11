@@ -568,6 +568,24 @@ form.addEventListener('submit', async (e) => {
   }
 })
 
+/* --------------------------------------------------------------- no zoom */
+
+// The page is a fixed composition, so zooming only breaks it. The viewport tag
+// covers pinch on a phone; these cover the desktop gestures it does not.
+addEventListener(
+  'wheel',
+  (e) => {
+    if (e.ctrlKey) e.preventDefault()
+  },
+  { passive: false },
+)
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  addEventListener(type, (e) => e.preventDefault(), { passive: false })
+}
+addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0'].includes(e.key)) e.preventDefault()
+})
+
 /* -------------------------------------------------------------------- init */
 
 window.addEventListener('pagehide', stopStream)

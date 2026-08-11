@@ -342,7 +342,22 @@ app.get('/healthz', (_req, res) => res.type('text').send('ok'))
 
 /* ------------------------------------------------------------------- pages */
 
-app.use(express.static(path.join(__dirname, 'public'), { index: false, maxAge: '1h' }))
+// Revalidate rather than cache: an hour-long cache meant a phone could still be
+// running the previous deploy's upload.js, which is indistinguishable from the
+// feature being broken. ETags mean an unchanged file is still a cheap 304.
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    index: false,
+    etag: true,
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+  }),
+)
+
+// The pages themselves are tiny and must never be stale.
+app.use((_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache')
+  next()
+})
 
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
 app.get('/thanks', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'thanks.html')))

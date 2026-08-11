@@ -1,10 +1,4 @@
-// A small drawing pad for handwritten notes, with a coloured-pencil feel.
-//
-// A plain stroked path reads as marker, not pencil. Pencil looks the way it
-// does because pigment catches unevenly on paper grain, so each segment here is
-// laid down as several thin, semi-transparent passes jittered a fraction of a
-// pixel apart. They build up dark where the hand goes slowly or doubles back,
-// exactly as a real pencil does.
+// A small drawing pad for handwritten notes: a plain pen, in pastels.
 
 const PASTELS = [
   '#f2a3b3', // pink
@@ -69,7 +63,6 @@ export class Sketch {
       b.setAttribute('aria-label', `Colour ${i + 1}`)
       b.addEventListener('click', () => {
         this.colour = colour
-        this.picker.value = colour
         this.markActive(b)
       })
       container.append(b)
@@ -202,21 +195,12 @@ export class Sketch {
   stroke(from, to) {
     const ctx = this.ctx
     ctx.strokeStyle = this.colour
-    ctx.globalAlpha = 0.22
-
-    // Several offset passes rather than one solid line: this is what gives the
-    // grainy, uneven edge of a pencil instead of a flat marker stroke.
-    for (let i = 0; i < 4; i++) {
-      const jx = (Math.random() - 0.5) * 1.5
-      const jy = (Math.random() - 0.5) * 1.5
-      ctx.lineWidth = 2.1 + Math.random() * 1.1
-      ctx.beginPath()
-      ctx.moveTo(from.x + jx, from.y + jy)
-      ctx.lineTo(to.x + jx, to.y + jy)
-      ctx.stroke()
-    }
-
     ctx.globalAlpha = 1
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(from.x, from.y)
+    ctx.lineTo(to.x, to.y)
+    ctx.stroke()
     this.dirty = true
   }
 
