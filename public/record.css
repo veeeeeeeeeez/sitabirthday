@@ -197,12 +197,21 @@
 
 /* ------------------------------------------------------------- controls */
 
+/* The record button is centred under the picture; the upload sits out at the
+   right edge so it never shifts the centre. */
 .controls {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.1rem;
+  width: min(var(--stage-w), 34rem);
+}
+
+.filepick {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Sits beside the record button rather than over the picture. */
