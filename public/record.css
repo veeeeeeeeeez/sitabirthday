@@ -29,7 +29,7 @@
 
 .intro {
   text-align: center;
-  max-width: 26rem;
+  max-width: min(48rem, 100%);
 }
 
 .intro h1 {
@@ -49,14 +49,16 @@
 .intro p {
   margin: 0;
   font-family: var(--serif);
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: clamp(0.82rem, 1.5vw, 0.98rem);
+  line-height: 1.5;
   color: #8a8279;
+  text-wrap: balance;
 }
 
-/* Once the take is done the instructions have served their purpose. */
+/* Once the take is done the instructions have served their purpose, and the
+   space they were using is needed. */
 .intro.is-done p {
-  visibility: hidden;
+  display: none;
 }
 
 /* --------------------------------------------------------------- the frame */
@@ -66,6 +68,19 @@
 .stage-wrap {
   --stage-h: min(50svh, 112vw);
   --stage-w: calc(var(--stage-h) * 3 / 4);
+}
+
+/* The review fields add a block under the picture, so the picture gives up
+   height and the spacing tightens, keeping the whole step on one screen. */
+.stage-wrap.is-review {
+  --stage-h: min(46svh, 92vw);
+  --stage-w: calc(var(--stage-h) * 3 / 4);
+  gap: clamp(0.7rem, 1.8vh, 1rem);
+}
+
+/* The heading has done its job by this point and the room is needed. */
+.stage-wrap.is-review .intro {
+  display: none;
 }
 
 .stage {
@@ -83,8 +98,37 @@
     --stage-w: calc(var(--stage-h) * 4 / 3);
   }
 
+  .stage-wrap.is-review {
+    --stage-h: min(44svh, 32vw);
+    --stage-w: calc(var(--stage-h) * 4 / 3);
+  }
+
+  /* A short laptop has less room than a phone once the fields are in. */
+  @media (max-height: 820px) {
+    .stage-wrap.is-review {
+      --stage-h: min(36svh, 30vw);
+      --stage-w: calc(var(--stage-h) * 4 / 3);
+    }
+  }
+
   .stage {
     aspect-ratio: 4 / 3;
+  }
+}
+
+/* A laptop is wide but short, so the picture has to be sized by the height
+   that is actually left over rather than by the width. */
+@media (min-width: 48rem) and (max-height: 800px) {
+  .stage-wrap {
+    --stage-h: min(48svh, 42vw);
+    --stage-w: calc(var(--stage-h) * 4 / 3);
+  }
+}
+
+@media (min-width: 48rem) and (min-height: 801px) and (max-height: 960px) {
+  .stage-wrap {
+    --stage-h: min(57svh, 44vw);
+    --stage-w: calc(var(--stage-h) * 4 / 3);
   }
 }
 
@@ -197,20 +241,20 @@
 
 /* ------------------------------------------------------------- controls */
 
-/* The record button is centred under the picture; the upload sits out at the
-   right edge so it never shifts the centre. */
+/* The record button sits dead centre. The upload is taken out of the flow and
+   hung just off its right edge, so it is close by without shifting the centre. */
 .controls {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(var(--stage-w), 34rem);
+  width: var(--stage-w);
 }
 
 .filepick {
   position: absolute;
-  right: 0;
   top: 50%;
+  right: 0;
   transform: translateY(-50%);
 }
 
@@ -220,15 +264,20 @@
 }
 
 .filepick label {
-  display: grid;
-  place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
+  padding: 0.5rem 0.95rem;
   border: 1px solid rgba(22, 19, 15, 0.2);
-  border-radius: 50%;
+  border-radius: 100px;
+  font-family: var(--ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #6f675e;
   cursor: pointer;
+  white-space: nowrap;
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 
@@ -238,8 +287,9 @@
 }
 
 .filepick label svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
 }
 
 .filepick[hidden] {
@@ -331,14 +381,15 @@
 .review {
   display: none;
   gap: 0.55rem;
-  width: min(var(--stage-w), 34rem);
+  width: var(--stage-w);
 }
 
 .review.is-visible {
   display: grid;
 }
 
-.review input[type='text'] {
+.review input[type='text'],
+.review textarea {
   width: 100%;
   font-family: var(--serif);
   font-size: 0.95rem;
@@ -351,11 +402,18 @@
   transition: border-color 0.2s ease;
 }
 
-.review input[type='text']::placeholder {
+.review textarea {
+  resize: none;
+  line-height: 1.4;
+}
+
+.review input[type='text']::placeholder,
+.review textarea::placeholder {
   color: #a49c92;
 }
 
-.review input[type='text']:focus {
+.review input[type='text']:focus,
+.review textarea:focus {
   outline: none;
   border-bottom-color: #16130f;
 }

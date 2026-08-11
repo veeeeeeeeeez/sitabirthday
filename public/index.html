@@ -16,7 +16,7 @@
     <form class="stage-wrap" id="form" novalidate>
       <header class="intro" id="intro">
         <h1><em data-honoree>Sita</em> is turning 22!</h1>
-        <p id="introLine">Press record to leave a lovely message.</p>
+        <p id="introLine">This is a secret so hushhh. Press record to leave a lovely message &mdash; stoked for her to hear from you all.</p>
       </header>
 
       <div class="stage" id="stage">
@@ -55,7 +55,7 @@
           placeholder="Your name"
           required
         />
-        <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
+        <textarea id="message" maxlength="500" rows="2" placeholder="A note (optional)"></textarea>
         <div class="review-row">
           <button type="button" class="pill" id="retake">Retake</button>
           <button type="submit" class="pill pill--dark" id="submit">Send</button>
@@ -83,18 +83,18 @@
 
         <div class="filepick" id="filepick">
           <input type="file" id="video" accept="video/*" />
-          <label for="video" id="filepickLabel" title="Upload a video instead">
+          <label for="video" id="filepickLabel">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.6"
+                stroke-width="1.7"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
             </svg>
-            <span class="sr-only">Upload a video instead</span>
+            Upload
           </label>
         </div>
       </div>

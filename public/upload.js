@@ -333,6 +333,7 @@ function enterReview(url) {
 
   review.classList.add('is-visible')
   intro.classList.add('is-done')
+  form.classList.add('is-review')
   nameInput.focus({ preventScroll: true })
 }
 
@@ -352,6 +353,7 @@ function resetToCamera() {
 
   review.classList.remove('is-visible')
   intro.classList.remove('is-done')
+  form.classList.remove('is-review')
   shutter.hidden = false
   filepick.hidden = false
   fileInput.value = ''
