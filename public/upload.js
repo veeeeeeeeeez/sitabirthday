@@ -1,10 +1,6 @@
-import { FilmProjector } from '/film.js'
-
 const $ = (id) => document.getElementById(id)
 
 const form = $('form')
-const stage = $('stage')
-const film = $('film')
 const stageIdle = $('stageIdle')
 const idleText = $('idleText')
 const preview = $('preview')
@@ -32,7 +28,6 @@ const MAX_SECONDS = 90
 const POSTER_AT_MS = 1200
 
 let stream = null
-let projector = null
 let recorder = null
 let chunks = []
 let videoBlob = null
@@ -95,24 +90,6 @@ const canRecord = () =>
 
 /* ------------------------------------------------------------------ camera */
 
-// Match the render target to the frame box, so the shader's cover-crop has the
-// right target aspect and nothing gets squashed.
-function frameSize() {
-  const box = stage.getBoundingClientRect()
-  const ar = box.width && box.height ? box.width / box.height : 1 / 1.15
-  const h = 620
-  return [Math.round(h * ar), h]
-}
-
-function makeProjector() {
-  try {
-    return new FilmProjector(film)
-  } catch {
-    idleText.textContent = 'This browser cannot run the film effect.'
-    return null
-  }
-}
-
 function stopStream() {
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
@@ -131,25 +108,12 @@ async function startCamera() {
     })
 
     preview.srcObject = stream
-    await preview.play().catch(() => {})
-
-    // Wait for real dimensions before sizing the render target.
-    if (!preview.videoWidth) {
-      await new Promise((resolve) => {
-        preview.addEventListener('loadedmetadata', resolve, { once: true })
-        setTimeout(resolve, 2500)
-      })
-    }
-
-    if (!projector) projector = makeProjector()
-    // The shader crops the camera to the frame shape rather than stretching it.
-    const [outW, outH] = frameSize()
-    if (projector) projector.start(preview, outW, outH)
-
-    // Mirroring is a CSS transform only, so captureStream still records the
-    // unmirrored frame the way a camera actually saw it.
-    film.classList.toggle('is-mirrored', facingMode === 'user')
+    preview.hidden = false
+    // Mirrored only for the person looking at it; the recording is the raw
+    // stream, so the file itself is never flipped.
+    preview.classList.toggle('is-mirrored', facingMode === 'user')
     stageIdle.style.display = 'none'
+    await preview.play().catch(() => {})
 
     shutter.disabled = false
     hint.textContent = ''
@@ -175,14 +139,19 @@ flip.addEventListener('click', () => {
 
 /* --------------------------------------------------------------- recording */
 
-// Grab a still straight off the live preview. Far more reliable than seeking a
-// freshly recorded blob, which often has no duration metadata yet.
+// A still off the live preview, used as the thumbnail on the wall.
 function capturePoster() {
-  if (posterBlob || !film.width) return
+  if (posterBlob) return
   try {
-    // Straight off the graded canvas, so the still on the wall is the same
-    // film frame rather than a clean digital one.
-    film.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
+    const w = preview.videoWidth
+    const h = preview.videoHeight
+    if (!w || !h) return
+    const scale = Math.min(720 / w, 720 / h, 1)
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(w * scale)
+    canvas.height = Math.round(h * scale)
+    canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((b) => (posterBlob = b), 'image/jpeg', 0.85)
   } catch {
     /* a missing poster only costs a prettier card on the wall */
   }
@@ -203,12 +172,7 @@ function startRecording() {
 
   const mimeType = pickMimeType()
   try {
-    // Capture the canvas, not the camera, so the grain, halation and weave are
-    // baked into the file instead of being a preview-only effect. Super 8 runs
-    // at 18fps and so does the render loop.
-    const filmStream = film.captureStream(18)
-    for (const t of stream.getAudioTracks()) filmStream.addTrack(t)
-    recorder = new MediaRecorder(filmStream, mimeType ? { mimeType } : undefined)
+    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
   } catch {
     return showError('This browser could not start recording. Try uploading a video instead.')
   }
@@ -243,12 +207,6 @@ function startRecording() {
   timer.classList.add('is-visible')
   flip.classList.remove('is-visible')
   filepick.hidden = true
-  // The flicker belongs to the idle leader. A take holds still: no shutter
-  // flicker, no scratch flashes, weave damped.
-  if (projector) {
-    projector.flicker = false
-    projector.steady = true
-  }
   hint.textContent = 'recording'
   timerText.textContent = '0:00'
 
@@ -258,10 +216,6 @@ function startRecording() {
 
 function stopRecording() {
   clearInterval(tickHandle)
-  if (projector) {
-    projector.flicker = true
-    projector.steady = false
-  }
   if (recorder && recorder.state !== 'inactive') recorder.stop()
   shutter.dataset.state = 'idle'
   shutter.setAttribute('aria-label', 'Record a video')
@@ -311,8 +265,7 @@ scrub.addEventListener('pointerup', (e) => {
 
 function enterReview(url) {
   stopStream()
-  projector?.stop()
-  film.hidden = true
+  preview.hidden = true
   stageIdle.style.display = 'none'
   shutter.hidden = true
   flip.classList.remove('is-visible')
@@ -322,9 +275,8 @@ function enterReview(url) {
   playback.src = url
   playback.hidden = false
   playback.loop = true
-  playback.classList.toggle('is-mirrored', false)
-  // The stop tap counts as user activation, so sound is usually allowed. Fall
-  // back to muted rather than not playing at all.
+  // Stopping the take counts as user activation, so sound is usually allowed.
+  // Fall back to muted rather than not playing at all.
   playback.muted = false
   playback.play().catch(() => {
     playback.muted = true
@@ -350,7 +302,6 @@ function resetToCamera() {
   playback.hidden = true
   playback.removeAttribute('src')
   playback.load()
-  film.hidden = false
 
   review.classList.remove('is-visible')
   shutter.hidden = false
@@ -367,8 +318,7 @@ $('retake').addEventListener('click', () => {
 
 /* ------------------------------------------------- uploaded-file fallback */
 
-// Seek-and-draw, used only for files the user picked; a recording gets its
-// poster off the live preview instead.
+// Seek-and-draw, used only for files the user picked.
 function posterFromFile(file) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
@@ -397,7 +347,7 @@ function posterFromFile(file) {
         canvas.height = Math.round(video.videoHeight * scale)
         if (!canvas.width || !canvas.height) return done(null)
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
-        canvas.toBlob((b) => done(b), 'image/jpeg', 0.82)
+        canvas.toBlob((b) => done(b), 'image/jpeg', 0.85)
       } catch {
         done(null)
       }
@@ -525,10 +475,7 @@ form.addEventListener('submit', async (e) => {
 
 /* -------------------------------------------------------------------- init */
 
-window.addEventListener('pagehide', () => {
-  stopStream()
-  projector?.stop()
-})
+window.addEventListener('pagehide', stopStream)
 
 if (!canRecord()) {
   shutter.hidden = true

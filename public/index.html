@@ -8,106 +8,85 @@
     />
     <title>A message for Sita</title>
     <meta name="robots" content="noindex" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/record.css" />
   </head>
   <body class="record-body">
-    <form class="filmstage" id="form" novalidate>
-      <!-- One continuous roll running off the top and bottom of the screen. The
-           frames either side of the live one are stills from other people's
-           submissions. -->
-      <div class="reel" id="reel">
-        <div class="reel-perf" id="reelPerf" aria-hidden="true"></div>
+    <form class="stage-wrap" id="form" novalidate>
+      <div class="stage" id="stage">
+        <video id="preview" playsinline muted autoplay></video>
+        <video id="playback" playsinline loop></video>
 
-        <div class="reel-frames">
-          <div class="frame frame--still" data-still aria-hidden="true"></div>
-          <div class="frame frame--still" id="framePrev" aria-hidden="true"></div>
+        <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
 
-          <div class="frame frame--live" id="stage">
-            <canvas id="film"></canvas>
-            <video id="preview" playsinline muted autoplay></video>
-            <video id="playback" playsinline loop></video>
+        <div class="timer" id="timer"><i></i><span id="timerText">0:00</span></div>
 
-            <div class="stage-idle" id="stageIdle"><p id="idleText"></p></div>
-
-            <div class="timer" id="timer"><i></i><span id="timerText">0:00</span></div>
-
-            <div class="review" id="reviewActions">
-              <input
-                type="text"
-                id="name"
-                maxlength="60"
-                autocomplete="name"
-                placeholder="Your name"
-                required
-              />
-              <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
-              <div class="review-row">
-                <button type="button" class="pill" id="retake">Retake</button>
-                <button type="submit" class="pill pill--solid" id="submit">Send</button>
-              </div>
-              <div class="progress" id="progress">
-                <div class="track"><div class="bar" id="progressBar"></div></div>
-                <div class="label" id="progressLabel"></div>
-              </div>
-            </div>
-
-            <div
-              class="scrub"
-              id="scrub"
-              role="slider"
-              aria-label="Playback position"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-              tabindex="-1"
-            >
-              <div class="scrub-fill" id="scrubFill"></div>
-            </div>
-          </div>
-
-          <div class="frame frame--still" id="frameNext" aria-hidden="true"></div>
-          <div class="frame frame--still" data-still aria-hidden="true"></div>
-        </div>
-      </div>
-
-      <!-- Controls sit off the film, to the right. -->
-      <div class="controls-col">
-        <button
-          type="button"
-          class="shutter"
-          id="shutter"
-          data-state="idle"
-          aria-label="Record a video"
-        >
-          <span class="ring"></span>
-          <span class="core"></span>
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle id="countdown" cx="50" cy="50" r="48" />
-          </svg>
-        </button>
-
-        <button type="button" class="ghost-btn" id="flip" aria-label="Switch camera">&#8635;</button>
+        <button type="button" class="flip-cam" id="flip" aria-label="Switch camera">&#8635;</button>
 
         <div class="filepick" id="filepick">
           <input type="file" id="video" accept="video/*" />
           <label for="video" id="filepickLabel" aria-label="Upload a video instead">&#8593;</label>
         </div>
 
-        <p class="hint-line" id="hint"></p>
+        <div class="review" id="reviewActions">
+          <input
+            type="text"
+            id="name"
+            maxlength="60"
+            autocomplete="name"
+            placeholder="Your name"
+            required
+          />
+          <input type="text" id="message" maxlength="500" placeholder="A note (optional)" />
+          <div class="review-row">
+            <button type="button" class="pill" id="retake">Retake</button>
+            <button type="submit" class="pill pill--solid" id="submit">Send</button>
+          </div>
+          <div class="progress" id="progress">
+            <div class="track"><div class="bar" id="progressBar"></div></div>
+            <div class="label" id="progressLabel"></div>
+          </div>
+        </div>
+
+        <div
+          class="scrub"
+          id="scrub"
+          role="slider"
+          aria-label="Playback position"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          tabindex="-1"
+        >
+          <div class="scrub-fill" id="scrubFill"></div>
+        </div>
       </div>
 
+      <button
+        type="button"
+        class="shutter"
+        id="shutter"
+        data-state="idle"
+        aria-label="Record a video"
+      >
+        <span class="ring"></span>
+        <span class="core"></span>
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle id="countdown" cx="50" cy="50" r="48" />
+        </svg>
+      </button>
+
+      <p class="hint-line" id="hint"></p>
       <div class="error" id="error" role="alert"></div>
     </form>
 
-    <script src="/reel.js" type="module"></script>
     <script src="/upload.js" type="module"></script>
   </body>
 </html>
