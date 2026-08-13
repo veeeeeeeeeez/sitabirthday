@@ -22,6 +22,7 @@ const {
   HONOREE_NAME = 'Sita',
   VIEW_KEY = '',
   ADMIN_KEY = '',
+  CURATE_KEY = '',
   MAX_UPLOAD_MB = '200',
   PORT = 3000,
 } = process.env
@@ -278,7 +279,9 @@ app.post('/api/submissions', async (req, res) => {
 app.get('/api/reel', async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit) || 8, 1), 24)
-    const items = (await readAllMeta()).filter((i) => i.posterKey).slice(-limit)
+    const items = (await readAllMeta())
+      .filter((i) => i.posterKey && !i.hidden)
+      .slice(-limit)
     const frames = await Promise.all(
       items.map((item) =>
         getSignedUrl(s3, new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.posterKey }), {
@@ -293,15 +296,17 @@ app.get('/api/reel', async (req, res) => {
   }
 })
 
-app.get('/api/submissions', async (_req, res) => {
+app.get('/api/submissions', async (req, res) => {
   try {
-    const items = await readAllMeta()
+    const curator = Boolean(CURATE_KEY) && req.get('x-curate-key') === CURATE_KEY
+    const items = (await readAllMeta()).filter((item) => curator || !item.hidden)
     const withUrls = await Promise.all(
       items.map(async (item) => ({
         id: item.id,
         name: item.name,
         message: item.message,
         mirrored: item.mirrored !== false,
+        hidden: Boolean(item.hidden),
         createdAt: item.createdAt,
         noteUrl: item.noteKey
           ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: R2_BUCKET, Key: item.noteKey }), {
@@ -326,6 +331,44 @@ app.get('/api/submissions', async (_req, res) => {
   } catch (err) {
     console.error('list failed', err)
     res.status(500).json({ error: 'Could not load the scrapbook.' })
+  }
+})
+
+// Lets the wall unlock curation without changing anything.
+app.post('/api/curation/check', (req, res) => {
+  if (!CURATE_KEY || req.body?.key !== CURATE_KEY) return res.sendStatus(403)
+  res.sendStatus(204)
+})
+
+// Saves the full curation state: the ids given are hidden from the wall,
+// everything else is shown. Written onto each submission's record, so it
+// holds across restarts and for every viewer.
+app.post('/api/curation', async (req, res) => {
+  try {
+    if (!CURATE_KEY || req.body?.key !== CURATE_KEY) return res.sendStatus(403)
+    const hiddenIds = new Set(Array.isArray(req.body?.hiddenIds) ? req.body.hiddenIds : [])
+
+    const items = await readAllMeta()
+    let changed = 0
+    for (const item of items) {
+      const hide = hiddenIds.has(item.id)
+      if (Boolean(item.hidden) === hide) continue
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: metaKey(item.id),
+          ContentType: 'application/json',
+          Body: JSON.stringify({ ...item, hidden: hide }),
+        }),
+      )
+      changed++
+    }
+
+    metaCache = { at: 0, items: null }
+    res.json({ ok: true, changed })
+  } catch (err) {
+    console.error('curation failed', err)
+    res.status(500).json({ error: 'Could not save.' })
   }
 })
 

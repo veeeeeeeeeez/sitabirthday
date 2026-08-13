@@ -514,3 +514,140 @@
   text-transform: uppercase;
   color: var(--ink-faint);
 }
+
+/* ---------------------------------------------------------------- curation */
+
+/* Host-only controls, tucked in the top right. */
+.curate {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.curate-key {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: 1px solid rgba(22, 19, 15, 0.14);
+  border-radius: 50%;
+  background: #fff;
+  color: #b7afa4;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.curate-key:hover,
+.curate-key.is-open {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.curate-key svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.curate-login[hidden],
+.curate-actions[hidden] {
+  display: none;
+}
+
+.curate-login input {
+  width: 8.5rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid rgba(22, 19, 15, 0.16);
+  border-radius: 100px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.curate-login input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
+.curate-login input.is-wrong {
+  border-color: #b03a2a;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.curate-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.curate-actions span {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.curate-actions button {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(22, 19, 15, 0.2);
+  border-radius: 100px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.curate-actions #curateSave {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.curate-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* A work switched off while curating: dimmed, with a small tag. */
+.work.is-off .work-plate {
+  opacity: 0.3;
+}
+
+.work.is-off .work-label {
+  opacity: 0.45;
+}
+
+.work .off-tag {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 100px;
+  background: rgba(22, 19, 15, 0.85);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: none;
+  z-index: 2;
+}
+
+.work.is-off .off-tag {
+  display: block;
+}

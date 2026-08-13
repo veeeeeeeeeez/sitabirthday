@@ -17,6 +17,11 @@ let submissions = []
 let current = -1
 let lastFocused = null
 
+// Curation: unlocked with a passcode, toggles which works the wall shows.
+let curateKeyVal = null
+let curating = false
+const hiddenSet = new Set()
+
 const pad = (n) => String(n).padStart(2, '0')
 
 const monogramOf = (name) => name.match(/\p{L}/u)?.[0]?.toUpperCase() ?? '?'
@@ -98,9 +103,23 @@ function buildWork(item, index) {
     text.append(note)
   }
 
+  const offTag = document.createElement('span')
+  offTag.className = 'off-tag'
+  offTag.textContent = 'hidden'
+  plate.append(offTag)
+
+  if (curating && hiddenSet.has(item.id)) work.classList.add('is-off')
+
   label.append(idx, text)
   work.append(plate, label)
-  work.addEventListener('click', () => open(index))
+  work.addEventListener('click', () => {
+    if (!curating) return open(index)
+    // While curating, a tap flips whether this one shows on the wall.
+    if (hiddenSet.has(item.id)) hiddenSet.delete(item.id)
+    else hiddenSet.add(item.id)
+    work.classList.toggle('is-off', hiddenSet.has(item.id))
+    updateCurateCount()
+  })
   return work
 }
 
@@ -210,31 +229,121 @@ lightbox.addEventListener(
 
 /* ------------------------------------------------------------------ load */
 
-try {
-  const res = await fetch('/api/submissions')
+async function render() {
+  // The curator sees everything, hidden included; everyone else sees the wall.
+  const headers = curating && curateKeyVal ? { 'x-curate-key': curateKeyVal } : {}
+  const res = await fetch('/api/submissions', { headers })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Could not load the exhibition.')
 
   submissions = data.submissions
+  if (curating) {
+    hiddenSet.clear()
+    for (const item of submissions) if (item.hidden) hiddenSet.add(item.id)
+  }
   for (const el of document.querySelectorAll('[data-honoree]')) el.textContent = data.honoree
   document.title = `${data.honoree} — a private exhibition`
 
-  status.remove()
-
+  gallery.textContent = ''
   if (!submissions.length) {
+    gallery.classList.add('is-empty')
     gallery.innerHTML =
       '<p class="board-status">The walls are still bare. Check back once the first films arrive.</p>'
   } else {
     gallery.classList.remove('is-empty')
     const n = submissions.length
     $('countLabel').textContent = `${pad(n)} ${n === 1 ? 'work' : 'works'}`
-    $('cueText').textContent = '( scroll sideways )'
+    $('cueText').textContent = curating ? '( tap a work to hide or show it )' : '( scroll sideways )'
 
     const frag = document.createDocumentFragment()
     submissions.forEach((item, i) => frag.append(buildWork(item, i)))
     gallery.append(frag)
     requestAnimationFrame(updateArrows)
   }
-} catch (err) {
-  status.textContent = `${err.message} Try refreshing the page.`
+  updateCurateCount()
 }
+
+try {
+  status.remove()
+  await render()
+} catch (err) {
+  gallery.innerHTML = '<p class="board-status">Could not load the exhibition. Try refreshing.</p>'
+}
+
+/* -------------------------------------------------------------- curation */
+
+const curateKey = $('curateKey')
+const curateLogin = $('curateLogin')
+const curatePass = $('curatePass')
+const curateActions = $('curateActions')
+const curateCount = $('curateCount')
+const curateSave = $('curateSave')
+const curateCancel = $('curateCancel')
+
+function updateCurateCount() {
+  if (!curating) return
+  curateCount.textContent = hiddenSet.size ? `${hiddenSet.size} hidden` : 'all shown'
+}
+
+curateKey.addEventListener('click', () => {
+  if (curating) return
+  curateLogin.hidden = !curateLogin.hidden
+  curateKey.classList.toggle('is-open', !curateLogin.hidden)
+  if (!curateLogin.hidden) curatePass.focus()
+})
+
+curateLogin.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const key = curatePass.value.trim()
+  if (!key) return
+
+  const ok = await fetch('/api/curation/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key }),
+  }).then((r) => r.status === 204, () => false)
+
+  if (!ok) {
+    curatePass.value = ''
+    curatePass.classList.remove('is-wrong')
+    requestAnimationFrame(() => curatePass.classList.add('is-wrong'))
+    return
+  }
+
+  curateKeyVal = key
+  curating = true
+  curatePass.value = ''
+  curateLogin.hidden = true
+  curateActions.hidden = false
+  await render()
+})
+
+async function exitCurate() {
+  curating = false
+  curateKeyVal = null
+  hiddenSet.clear()
+  curateActions.hidden = true
+  curateKey.classList.remove('is-open')
+  await render()
+}
+
+curateCancel.addEventListener('click', exitCurate)
+
+curateSave.addEventListener('click', async () => {
+  curateSave.disabled = true
+  curateSave.textContent = 'Saving'
+  try {
+    const res = await fetch('/api/curation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: curateKeyVal, hiddenIds: [...hiddenSet] }),
+    })
+    if (!res.ok) throw new Error()
+    await exitCurate()
+  } catch {
+    curateCount.textContent = 'save failed'
+  } finally {
+    curateSave.disabled = false
+    curateSave.textContent = 'Save'
+  }
+})
