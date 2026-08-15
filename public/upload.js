@@ -162,6 +162,8 @@ async function startCamera() {
     stageIdle.style.display = 'none'
     await preview.play().catch(() => {})
 
+    watchTrack()
+
     shutter.disabled = false
     hint.textContent = ''
 
@@ -289,6 +291,33 @@ shutter.addEventListener('click', () => {
   else if (stream) startRecording()
   else startCamera()
 })
+
+// A recording that outlives its camera freezes: locking the phone, switching
+// apps or pulling down the shade stops the frames while the mic keeps going,
+// and the file plays one held frame from that moment on. Ending the take at
+// the interruption keeps everything that was real.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && shutter.dataset.state === 'recording') stopRecording()
+})
+
+// The camera can also be interrupted without the page hiding (a call banner,
+// Control Centre). The track mutes; if it stays muted, end the take rather
+// than record a freeze. The delay forgives a momentary blip.
+let muteTimer = null
+function watchTrack() {
+  const track = stream?.getVideoTracks()[0]
+  if (!track) return
+  track.addEventListener('mute', () => {
+    clearTimeout(muteTimer)
+    muteTimer = setTimeout(() => {
+      if (track.muted && shutter.dataset.state === 'recording') stopRecording()
+    }, 800)
+  })
+  track.addEventListener('unmute', () => clearTimeout(muteTimer))
+  track.addEventListener('ended', () => {
+    if (shutter.dataset.state === 'recording') stopRecording()
+  })
+}
 
 /* ---------------------------------------------------- custom playback bar */
 
